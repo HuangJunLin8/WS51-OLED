@@ -169,7 +169,7 @@ void OLED_Clear(void)
 void OLED_Flush(void)
 {
     uint8_t page;
-    uint8_t col;
+    /* col not needed in page mode */
 
     for (page = 0; page < OLED_PAGES; page++) {
 
@@ -234,7 +234,7 @@ void OLED_DrawHLine(uint8_t x, uint8_t y, uint8_t len, uint8_t on)
  */
 void OLED_DrawString(uint8_t x, uint8_t y, const char *str)
 {
-    Font_DrawStr(&g_font, x, y, str, OLED_DrawHLine);
+    Font_DrawStr(&g_font, x, y, str);
 }
 
 /**
@@ -242,5 +242,5 @@ void OLED_DrawString(uint8_t x, uint8_t y, const char *str)
  */
 void OLED_DrawString_F(uint8_t x, uint8_t y, const char *str, font_t *f)
 {
-    Font_DrawStr(f, x, y, str, OLED_DrawHLine);
+    Font_DrawStr(f, x, y, str);
 }

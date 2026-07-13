@@ -2,15 +2,16 @@
  * font.c — u8g2 字体解码器实现 (单色, C51 适配)
  *
  * 从 LCD_0-96 参考项目移植，主要改动:
+ *   - 移除函数指针回调 → 直接调用 OLED_DrawHLine() (避免 C51 C212 错误)
  *   - 移除 16-bit RGB565 颜色 → 单色 0/1
- *   - 移除帧缓冲区直接写入 → 通过回调 draw_hline 画线
  *   - 移除 UTF-8 支持，仅 ASCII
- *   - 移除透明背景概念，由回调函数自行处理
  *   - 移除 <string.h> 依赖 (8051 节省空间)
  *   - 所有变量声明在函数开头 (C89 兼容)
+ *   - data → buf (避开 C51 data 关键字)
  */
 
 #include "font.h"
+#include "oled_disp.h"
 
 /* ==================== 内部辅助函数 ==================== */
 
@@ -33,26 +34,26 @@ static uint16_t font_read_word(const uint8_t *p)
 /* 解析字体信息头部 (23 字节) */
 static void font_read_info(font_info_t *info, const uint8_t *buf)
 {
-    info->glyph_cnt          = font_read_byte(buf +0);
-    info->bbx_mode           = font_read_byte(buf +1);
-    info->bits_per_0         = font_read_byte(buf +2);
-    info->bits_per_1         = font_read_byte(buf +3);
-    info->bits_per_char_width  = font_read_byte(buf +4);
-    info->bits_per_char_height = font_read_byte(buf +5);
-    info->bits_per_char_x    = font_read_byte(buf +6);
-    info->bits_per_char_y    = font_read_byte(buf +7);
-    info->bits_per_delta_x   = font_read_byte(buf +8);
-    info->max_char_width     = (int8_t)font_read_byte(buf +9);
-    info->max_char_height    = (int8_t)font_read_byte(buf +10);
-    info->x_offset           = (int8_t)font_read_byte(buf +11);
-    info->y_offset           = (int8_t)font_read_byte(buf +12);
-    info->ascent_A           = (int8_t)font_read_byte(buf +13);
-    info->descent_g          = (int8_t)font_read_byte(buf +14);
-    info->ascent_para        = (int8_t)font_read_byte(buf +15);
-    info->descent_para       = (int8_t)font_read_byte(buf +16);
-    info->start_pos_upper_A  = font_read_word(buf +17);
-    info->start_pos_lower_a  = font_read_word(buf +19);
-    info->start_pos_unicode  = font_read_word(buf +21);
+    info->glyph_cnt          = font_read_byte(buf + 0);
+    info->bbx_mode           = font_read_byte(buf + 1);
+    info->bits_per_0         = font_read_byte(buf + 2);
+    info->bits_per_1         = font_read_byte(buf + 3);
+    info->bits_per_char_width  = font_read_byte(buf + 4);
+    info->bits_per_char_height = font_read_byte(buf + 5);
+    info->bits_per_char_x    = font_read_byte(buf + 6);
+    info->bits_per_char_y    = font_read_byte(buf + 7);
+    info->bits_per_delta_x   = font_read_byte(buf + 8);
+    info->max_char_width     = (int8_t)font_read_byte(buf + 9);
+    info->max_char_height    = (int8_t)font_read_byte(buf + 10);
+    info->x_offset           = (int8_t)font_read_byte(buf + 11);
+    info->y_offset           = (int8_t)font_read_byte(buf + 12);
+    info->ascent_A           = (int8_t)font_read_byte(buf + 13);
+    info->descent_g          = (int8_t)font_read_byte(buf + 14);
+    info->ascent_para        = (int8_t)font_read_byte(buf + 15);
+    info->descent_para       = (int8_t)font_read_byte(buf + 16);
+    info->start_pos_upper_A  = font_read_word(buf + 17);
+    info->start_pos_lower_a  = font_read_word(buf + 19);
+    info->start_pos_unicode  = font_read_word(buf + 21);
 }
 
 /* 从位流中读取无符号整数 */
@@ -87,9 +88,9 @@ static int8_t font_decode_get_signed_bits(font_decode_t *f, uint8_t cnt)
 }
 
 /* 准备解码一个字形 */
-static void font_setup_decode(font_t *f, const uint8_t *glyph_data)
+static void font_setup_decode(font_t *f, const uint8_t *glyph_buf)
 {
-    f->font_decode.decode_ptr      = glyph_data;
+    f->font_decode.decode_ptr      = glyph_buf;
     f->font_decode.decode_bit_pos  = 0;
     f->font_decode.glyph_width     = (int8_t)font_decode_get_unsigned_bits(
         &f->font_decode, f->font_info.bits_per_char_width);
@@ -99,14 +100,9 @@ static void font_setup_decode(font_t *f, const uint8_t *glyph_data)
 
 /**
  * 绘制一段 RLE 编码像素行
- *
- * @param f            字体对象
- * @param len          像素长度
- * @param is_foreground 1=前景(点亮), 0=背景(熄灭)
- * @param draw_hline   水平线绘制回调
+ * 直接调用 OLED_DrawHLine() —— 避免 C51 函数指针参数限制
  */
-static void font_decode_len(font_t *f, uint8_t len, uint8_t is_foreground,
-                            font_draw_hline_cb draw_hline)
+static void font_decode_len(font_t *f, uint8_t len, uint8_t is_foreground)
 {
     font_decode_t *decode;
     uint8_t cnt, rem, current;
@@ -118,8 +114,8 @@ static void font_decode_len(font_t *f, uint8_t len, uint8_t is_foreground,
         rem = (uint8_t)decode->glyph_width - (uint8_t)decode->x;
         current = (cnt < rem) ? cnt : rem;
 
-        /* 调用回调绘制线段 */
-        draw_hline(
+        /* 直接调用显示驱动 (C51 兼容: 不用函数指针) */
+        OLED_DrawHLine(
             (uint8_t)(decode->target_x + decode->x),
             (uint8_t)(decode->target_y + decode->y),
             current,
@@ -137,8 +133,7 @@ static void font_decode_len(font_t *f, uint8_t len, uint8_t is_foreground,
 }
 
 /* 解码一个完整的字形 */
-static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_data,
-                                font_draw_hline_cb draw_hline)
+static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_buf)
 {
     font_decode_t *decode;
     int8_t x, y, d;
@@ -146,7 +141,7 @@ static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_data,
     uint8_t a, b, cont;
 
     decode = &f->font_decode;
-    font_setup_decode(f, glyph_data);
+    font_setup_decode(f, glyph_buf);
 
     x = font_decode_get_signed_bits(decode, f->font_info.bits_per_char_x);
     y = font_decode_get_signed_bits(decode, f->font_info.bits_per_char_y);
@@ -164,8 +159,8 @@ static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_data,
             b = font_decode_get_unsigned_bits(decode, f->font_info.bits_per_1);
 
             do {
-                font_decode_len(f, a, 0, draw_hline);   /* 背景 */
-                font_decode_len(f, b, 1, draw_hline);   /* 前景 */
+                font_decode_len(f, a, 0);   /* 背景 */
+                font_decode_len(f, b, 1);   /* 前景 */
                 cont = font_decode_get_unsigned_bits(decode, 1);
             } while (cont != 0);
 
@@ -204,13 +199,13 @@ static const uint8_t *font_get_glyph_data(font_t *f, uint16_t encoding)
 
     /* 线性搜索字形 */
     for (;;) {
-        len = font_read_byte(font_buf +1);
+        len = font_read_byte(font_data + 1);
         if (len == 0)
             break;
 
         ch = font_read_byte(font_data);
         if (ch == (uint8_t)encoding) {
-            return font_buf +2;       /* 跳过 [编码, 长度] */
+            return font_data + 2;       /* 跳过 [编码, 长度] */
         }
         font_data += len;
     }
@@ -237,26 +232,24 @@ void Font_Init(font_t *f)
 /**
  * 设置字体类型
  */
-void Font_SetType(font_t *f, const uint8_t *font_data)
+void Font_SetType(font_t *f, const uint8_t *font_buf)
 {
-    if (f->font_type != font_data) {
-        f->font_type = font_data;
-        font_read_info(&f->font_info, font_data);
+    if (f->font_type != font_buf) {
+        f->font_type = font_buf;
+        font_read_info(&f->font_info, font_buf);
     }
 }
 
 /**
  * 绘制 ASCII 字符串
  *
- * @param f          字体对象
- * @param x          起始 x 坐标
- * @param y          起始 y 坐标 (基线)
- * @param str        ASCII 字符串 (以 '\0' 结尾)
- * @param draw_hline 水平线绘制回调
+ * @param f    字体对象
+ * @param x    起始 x 坐标
+ * @param y    起始 y 坐标 (基线)
+ * @param str  ASCII 字符串 (以 '\0' 结尾)
  * @return 绘制的总宽度 (像素)
  */
-uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str,
-                      font_draw_hline_cb draw_hline)
+uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str)
 {
     uint16_t sum;
     uint8_t  encoding;
@@ -279,7 +272,7 @@ uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str,
 
         glyph = font_get_glyph_data(f, encoding);
         if (glyph != (const uint8_t *)0) {
-            delta = font_decode_glyph(f, glyph, draw_hline);
+            delta = font_decode_glyph(f, glyph);
             x     = (uint8_t)(x + delta);
             sum   = (uint16_t)(sum + (uint16_t)(uint8_t)delta);
         }

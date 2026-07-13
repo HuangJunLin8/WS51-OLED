@@ -4,6 +4,10 @@
  * 从 LCD_0-96 参考项目移植，适配 WS51F6240 (8051) 单色 OLED。
  * 仅支持 u8g2 BDF 编译格式的字体数据 (BBX Mode 0)。
  *
+ * C51 适配要点:
+ *   - 不使用函数指针回调 (C51 最多 3 个寄存器参数)
+ *   - 字体解码器直接调用 OLED_DrawHLine() 绘制像素行
+ *
  * 字体数据格式 (23 字节头部):
  *   [0]  glyph_cnt           字形数量
  *   [1]  bbx_mode            0 = BBX mode
@@ -76,25 +80,11 @@ typedef struct {
     font_info_t    font_info;
 } font_t;
 
-/* ==================== 回调函数类型 ==================== */
-
-/**
- * 水平线段绘制回调
- * 由显示驱动实现，字体解码器调用此函数绘制像素行。
- *
- * @param x      起始 x 坐标
- * @param y      起始 y 坐标
- * @param len    像素长度
- * @param on     0 = 熄灭, 1 = 点亮
- */
-typedef void (*font_draw_hline_cb)(uint8_t x, uint8_t y, uint8_t len, uint8_t on);
-
 /* ==================== 函数声明 ==================== */
 
 void Font_Init(font_t *f);
-void Font_SetType(font_t *f, const uint8_t *font_data);
-void Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str,
-                  font_draw_hline_cb draw_hline);
+void Font_SetType(font_t *f, const uint8_t *font_buf);
+uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str);
 uint8_t Font_GetStrWidth(font_t *f, const char *str);
 uint8_t Font_GetHeight(font_t *f);
 
