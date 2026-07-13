@@ -1,0 +1,57 @@
+# Keil 编译输出文件
+*.obj
+*.lst
+*.m51
+*.omf
+*.plg
+*.bak
+*.dep
+*.map
+*.crf
+*.axf
+*.sbr
+*.lnp
+*.i
+*.scr
+*.d
+*.o
+*.lib
+
+# 编译产生的临时/中间文件
+*.__i
+*.build
+*.qview
+*.uvtmp
+*.uvgui*
+*.uvopt
+*.uvproj.*
+*.uvoptx.*
+!*.uvproj
+!*.uvoptx
+
+# 调试和下载文件
+*.hex
+*.bin
+*.elf
+
+# 用户自定义配置文件（避免不同电脑的本地配置冲突）
+*.USER
+*.DBG
+*.RWS
+*.TMP
+*.uvguix.*
+
+# 输出文件夹（如果使用默认名称）
+Output/
+Listings/
+Objects/
+DebugConfig/
+
+# 各种编辑器备份文件
+*~
+*.swp
+*.swo
+*.bak
+*.backup
+.DS_Store
+Thumbs.db
