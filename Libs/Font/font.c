@@ -31,28 +31,28 @@ static uint16_t font_read_word(const uint8_t *p)
 }
 
 /* 解析字体信息头部 (23 字节) */
-static void font_read_info(font_info_t *info, const uint8_t *data)
+static void font_read_info(font_info_t *info, const uint8_t *buf)
 {
-    info->glyph_cnt          = font_read_byte(data + 0);
-    info->bbx_mode           = font_read_byte(data + 1);
-    info->bits_per_0         = font_read_byte(data + 2);
-    info->bits_per_1         = font_read_byte(data + 3);
-    info->bits_per_char_width  = font_read_byte(data + 4);
-    info->bits_per_char_height = font_read_byte(data + 5);
-    info->bits_per_char_x    = font_read_byte(data + 6);
-    info->bits_per_char_y    = font_read_byte(data + 7);
-    info->bits_per_delta_x   = font_read_byte(data + 8);
-    info->max_char_width     = (int8_t)font_read_byte(data + 9);
-    info->max_char_height    = (int8_t)font_read_byte(data + 10);
-    info->x_offset           = (int8_t)font_read_byte(data + 11);
-    info->y_offset           = (int8_t)font_read_byte(data + 12);
-    info->ascent_A           = (int8_t)font_read_byte(data + 13);
-    info->descent_g          = (int8_t)font_read_byte(data + 14);
-    info->ascent_para        = (int8_t)font_read_byte(data + 15);
-    info->descent_para       = (int8_t)font_read_byte(data + 16);
-    info->start_pos_upper_A  = font_read_word(data + 17);
-    info->start_pos_lower_a  = font_read_word(data + 19);
-    info->start_pos_unicode  = font_read_word(data + 21);
+    info->glyph_cnt          = font_read_byte(buf +0);
+    info->bbx_mode           = font_read_byte(buf +1);
+    info->bits_per_0         = font_read_byte(buf +2);
+    info->bits_per_1         = font_read_byte(buf +3);
+    info->bits_per_char_width  = font_read_byte(buf +4);
+    info->bits_per_char_height = font_read_byte(buf +5);
+    info->bits_per_char_x    = font_read_byte(buf +6);
+    info->bits_per_char_y    = font_read_byte(buf +7);
+    info->bits_per_delta_x   = font_read_byte(buf +8);
+    info->max_char_width     = (int8_t)font_read_byte(buf +9);
+    info->max_char_height    = (int8_t)font_read_byte(buf +10);
+    info->x_offset           = (int8_t)font_read_byte(buf +11);
+    info->y_offset           = (int8_t)font_read_byte(buf +12);
+    info->ascent_A           = (int8_t)font_read_byte(buf +13);
+    info->descent_g          = (int8_t)font_read_byte(buf +14);
+    info->ascent_para        = (int8_t)font_read_byte(buf +15);
+    info->descent_para       = (int8_t)font_read_byte(buf +16);
+    info->start_pos_upper_A  = font_read_word(buf +17);
+    info->start_pos_lower_a  = font_read_word(buf +19);
+    info->start_pos_unicode  = font_read_word(buf +21);
 }
 
 /* 从位流中读取无符号整数 */
@@ -204,13 +204,13 @@ static const uint8_t *font_get_glyph_data(font_t *f, uint16_t encoding)
 
     /* 线性搜索字形 */
     for (;;) {
-        len = font_read_byte(font_data + 1);
+        len = font_read_byte(font_buf +1);
         if (len == 0)
             break;
 
         ch = font_read_byte(font_data);
         if (ch == (uint8_t)encoding) {
-            return font_data + 2;       /* 跳过 [编码, 长度] */
+            return font_buf +2;       /* 跳过 [编码, 长度] */
         }
         font_data += len;
     }

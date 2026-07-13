@@ -198,18 +198,18 @@ void OLED_Flush(void)
 void OLED_SetPixel(uint8_t x, uint8_t y, uint8_t on)
 {
     uint16_t idx;
-    uint8_t  bit;
+    uint8_t  bp;
 
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT)
         return;
 
     idx = (uint16_t)((y >> 3) * OLED_WIDTH) + x;
-    bit = y & 0x07;
+    bp = y & 0x07;
 
     if (on) {
-        g_oled_fb[idx] |= (uint8_t)(1 << bit);
+        g_oled_fb[idx] |= (uint8_t)(1 << bp);
     } else {
-        g_oled_fb[idx] &= (uint8_t)(~(1 << bit));
+        g_oled_fb[idx] &= (uint8_t)(~(1 << bp));
     }
 }
 

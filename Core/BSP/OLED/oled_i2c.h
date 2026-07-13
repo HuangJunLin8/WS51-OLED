@@ -32,6 +32,6 @@
 
 void OLED_I2C_Init(void);
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
-                      const uint8_t *data, uint8_t len);
+                      const uint8_t *buf, uint8_t len);
 
 #endif /* OLED_I2C_H */

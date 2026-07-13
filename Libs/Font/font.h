@@ -100,6 +100,6 @@ uint8_t Font_GetHeight(font_t *f);
 
 /* ==================== 字体数据声明 ==================== */
 
-extern const uint8_t FONT_Terminus_14[];
+extern const uint8_t code FONT_Terminus_14[];
 
 #endif /* FONT_H */

@@ -47,7 +47,7 @@ void OLED_I2C_Init(void)
  * @return 0=成功, 1=仲裁丢失, 2=收到 NAK
  */
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
-                      const uint8_t *data, uint8_t len)
+                      const uint8_t *buf, uint8_t len)
 {
     uint8_t i, ret;
 
@@ -89,7 +89,7 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
             if (i >= len)
                 break;              /* 所有数据已发送完毕 */
 
-            I2CTXD = data[i++];     /* 发送下一个数据字节 */
+            I2CTXD = buf[i++];       /* 发送下一个数据字节 */
         }
         if (I2CFLG & RXNAK)
         {
