@@ -1,154 +1,162 @@
+/**
+ * main.c — SSD1306 96x16 OLED 硬件 IIC 演示 (WS51F6240)
+ *
+ * 硬件连接:
+ *   P02 = SCL (硬件 IIC)
+ *   P16 = SDA (硬件 IIC, 也是调试/下载接口)
+ *
+ * 功能: 在 0.69" OLED 上演示文字绘制
+ */
+
 #include "WS51F6240.h"
+#include "oled_disp.h"
 
+/* ==================== 全局变量 ==================== */
 
-// 毫秒计数器，在中断中递增
+/* 毫秒计数器，在 Timer0 中断中递增 */
 volatile unsigned long g_tick_ms = 0;
 
+/* ==================== 定时器 & 延时 ==================== */
 
-// ------------------ 定时器初始化 ------------------
-
-/*
- * 定时时间 = ((重载值 - 初始值) * 12 * 1000 * 1000) / 系统频率
- * 初始值   = 定时时间 * 系统频率 / 分频系数
- *
- * Mode 1 (16-bit): 最大定时 49.152ms @16MHz/12T
- *   1ms 需要计数: 16MHz / 12 * 0.001 = 1333.33 ≈ 1334
- *   重载值 = 65536 - 1334 = 64202
+/**
+ * 初始化 Timer0
+ * Mode 1 (16-bit): 1ms 定时 @16MHz/12T
+ * 计数 = 16MHz / 12 * 0.001 = 1334
+ * 重载值 = 65536 - 1334 = 64202
  */
 void init_timer0(void)
 {
-    // 模式1：16位定时器，1ms @16MHz 12T分频
-    TL0 = (65536 - 1334);            // 初始值低字节
-    TH0 = (65536 - 1334) >> 8;       // 初始值高字节
-    TMOD = 0x01;                     // Timer0 模式1 (16位), 系统时钟12分频
+    TL0 = (65536 - 1334);            /* 初始值低字节 */
+    TH0 = (65536 - 1334) >> 8;       /* 初始值高字节 */
+    TMOD = 0x01;                     /* Timer0 Mode 1, 12T 分频 */
 
-    ET0 = 1;                         // 使能 Timer0 中断
-    EA  = 1;                         // 使能总中断
-    TR0 = 1;                         // 启动 Timer0
+    ET0 = 1;                         /* 使能 Timer0 中断 */
+    EA  = 1;                         /* 使能总中断 */
+    TR0 = 1;                         /* 启动 Timer0 */
 }
 
-
-/*
- * 中断服务函数
- * 中断源：Timer0 中断 (interrupt 1)
- * 每 1ms 重装定时器初值并更新毫秒计数器
+/**
+ * Timer0 中断服务函数 (interrupt 1)
+ * 每 1ms 重装初值并更新毫秒计数器
  */
 void timer0_isr(void) interrupt 1
 {
-    // 重装初始值 (1ms @16MHz)
     TL0 = (65536 - 1334);
     TH0 = (65536 - 1334) >> 8;
-
-    g_tick_ms++;                     // 毫秒计数递增
+    g_tick_ms++;
 }
 
-
-
-// ------------------------ 延时函数 ------------------------
-// ms 延时
+/**
+ * 毫秒延时
+ */
 void delay_ms(unsigned int ms)
 {
-    unsigned long target = g_tick_ms + ms;
+    unsigned long target;
+    target = g_tick_ms + ms;
     while (g_tick_ms < target);
 }
 
+/* ==================== 演示函数 ==================== */
 
-// us 延时(1~49000us)
-void delay_us(unsigned int us)
+/**
+ * 绘制一个简单的动画帧: 水平移动的像素条
+ */
+static void demo_scroll_bar(uint8_t pos)
 {
-    unsigned char  th, tl;
-    unsigned int   start, now, elapsed;
-    unsigned int   ticks;
+    uint8_t x;
 
-    if (us == 0) return;
+    OLED_Clear();
 
-    // 目标 tick 数: us * 4 / 3 (每 tick = 0.75us)
-    ticks = us + us / 3;
+    /* 第 0 行 (y=0-7): 移动的方块 */
+    for (x = pos; x < pos + 8 && x < OLED_WIDTH; x++) {
+        OLED_SetPixel(x, 0, 1);
+        OLED_SetPixel(x, 1, 1);
+        OLED_SetPixel(x, 2, 1);
+    }
 
-    // 关闭 Timer0 中断，防止 ISR 在测量期间重置计数值
-    ET0 = 0;
-
-    /*
-     * 8051 经典 16-bit 定时器读取方式:
-     *   先读 TH0, 再读 TL0, 再核对 TH0 是否变化
-     *   若 TH0 变了说明 TL0 在读期间溢出进位，需重读
-     */
-    do {
-        th = TH0;
-        tl = TL0;
-    } while (th != TH0);
-    start = (th << 8) | tl;
-
-    // 轮询计数值直到达到目标 tick 数
-    do {
-        do {
-            th = TH0;
-            tl = TL0;
-        } while (th != TH0);
-        now = (th << 8) | tl;
-
-        // 处理 16-bit 计数器溢出
-        if (now >= start)
-            elapsed = now - start;
-        else
-            elapsed = (65536 - start) + now;
-    } while (elapsed < ticks);
-
-    // 恢复 Timer0 中断
-    ET0 = 1;
+    OLED_Flush();
 }
 
+/**
+ * 绘制文字信息
+ */
+static void demo_text(uint8_t page)
+{
+    OLED_Clear();
 
+    switch (page) {
+    case 0:
+        OLED_DrawString(0, 1, "WS51F6240");
+        break;
+    case 1:
+        OLED_DrawString(0, 1, "OLED 96x16");
+        break;
+    case 2:
+        OLED_DrawString(0, 1, "HW IIC OK!");
+        break;
+    default:
+        OLED_DrawString(0, 1, "Hello!");
+        break;
+    }
 
+    OLED_Flush();
+}
 
-// ------------------------ main函数 ------------------------
+/* ==================== 主函数 ==================== */
+
 void main()
 {
-    // 初始化系统时钟
-    SCCON  = 0x00; // HRC
+    uint8_t  demo_idx;
+    uint8_t  bar_pos;
+    uint16_t wait;
+
+    /* 系统时钟: HRC 16MHz */
+    SCCON  = 0x00;
     HRCON |= 0x80;
 
-	  // 配置端口为推挽输出
-    P00F = 0X02;
-    P01F = 0X02;
-    P02F = 0X02;
-    P03F = 0X02;
-    P04F = 0X02;
-    P05F = 0X02;
-    P06F = 0X02;
-    P07F = 0X02;
-    P10F = 0X02;
-    P11F = 0X02;
-    P12F = 0X02;
-    P15F = 0X02;
-    P16F = 0X02;
-    P17F = 0X02;
-    P20F = 0X02;
-    P21F = 0X02;
+    /* 初始化 Timer0 (1ms tick) */
+    init_timer0();
 
-    // 初始化 Timer0
-    init_timer0(); 
+    /*
+     * 初始化 OLED
+     * 内部配置 P02=SCL, P16=SDA (硬件 IIC)
+     * 发送 SSD1306 初始化命令序列
+     */
+    OLED_Init();
 
-    while(1)
+    /* 开机显示 */
+    OLED_Clear();
+    OLED_DrawString(5, 1, "WS51F6240");
+    OLED_Flush();
+    delay_ms(1500);
+
+    /* ========== 主循环: 交替显示文字和动画 ========== */
+    demo_idx = 0;
+    bar_pos  = 0;
+
+    while (1)
     {
-        // 翻转全部 GPIO（除P13、P14）
-        P00 = ~P00;
-        P01 = ~P01;
-        P02 = ~P02;
-        P03 = ~P03;
-        P04 = ~P04;
-        P05 = ~P05;
-        P06 = ~P06;
-        P07 = ~P07;
-        P10 = ~P10;
-        P11 = ~P11;
-        P12 = ~P12;
-        P15 = ~P15;
-        P16 = ~P16;
-        P17 = ~P17;
-        P20 = ~P20;
-        P21 = ~P21;
+        /* --- 阶段 1: 显示文字 (每种文字显示 2 秒) --- */
+        demo_text(demo_idx);
+        delay_ms(2000);
 
-        delay_ms(500);
+        demo_idx++;
+        if (demo_idx >= 4)
+            demo_idx = 0;
+
+        /* --- 阶段 2: 滚动条动画 (约 3 秒) --- */
+        for (bar_pos = 0; bar_pos < OLED_WIDTH - 8; bar_pos++) {
+            demo_scroll_bar(bar_pos);
+            delay_ms(30);
+        }
+        for (bar_pos = OLED_WIDTH - 8; bar_pos > 0; bar_pos--) {
+            demo_scroll_bar(bar_pos);
+            delay_ms(30);
+        }
+
+        /* 简单的防 watchdog 延时 */
+        for (wait = 0; wait < 1000; wait++) {
+            /* nop */
+        }
     }
 }
