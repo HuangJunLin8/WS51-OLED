@@ -2,6 +2,8 @@
 
 WS51F6240 驱动 0.69 寸 OLED (SSD1306, 96×16 像素)，当前使用**软件 IIC（GPIO 模拟）**，带轻量字体渲染。
 
+<img width="496" height="272" alt="VID_20260714_235943" src="https://github.com/user-attachments/assets/6fe60286-0d46-46be-8b82-2b7c4028f54c" />
+
 ## 当前状态
 
 | 项目 | 状态 | 说明 |
