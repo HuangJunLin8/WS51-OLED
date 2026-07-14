@@ -1,119 +1,149 @@
 /**
  * oled_i2c.c — SSD1306 软件 I2C 驱动实现
  *
- * GPIO 模拟 I2C 主机, ~100kHz @ 16MHz:
+ * 参考 SDK "19-IIC-host-模拟"，GPIO 模拟 I2C 主机:
  *   P13 = SCL (推挽输出)
- *   P14 = SDA (开漏输出, 需外部 4.7kΩ 上拉)
+ *   P14 = SDA (开漏，输入/输出自动切换)
+ *
+ * 注意: SDA 需外部 4.7kΩ 上拉电阻
  */
 
 #include "oled_i2c.h"
 
-// -------------------- 引脚宏 --------------------
+// -------------------- 引脚定义 (与 SDK 一致) --------------------
 
-#define I2C_SCL_HIGH()   (P13 = 1)
-#define I2C_SCL_LOW()    (P13 = 0)
-#define I2C_SDA_HIGH()   (P14 = 1)  // 开漏: 写1释放总线
-#define I2C_SDA_LOW()    (P14 = 0)  // 开漏: 写0拉低
-#define I2C_SDA_READ()   (P14)      // 读 SDA 电平
+#define IIC_SCL    P13
+#define IIC_SDA    P14
+#define READ_OUT   (P14F = 0xA2)
+#define READ_IN    (P14F = 0xA2)
+#define READ_SDA   P14
 
-// -------------------- 软件延时 (~5us @16MHz/12T) --------------------
+// 时钟调节 (与 SDK 一致, 1=~1us 延时)
+#define IIC_CLK_ADJ  1
 
-static void i2c_delay(void)
+// -------------------- 软件延时 (与 SDK 一致) --------------------
+
+static void delay_us(int i)
 {
-    // 每个 nop = 0.75us, 5us ≈ 7 nop
-    // 考虑函数调用开销, 约 5us
-    unsigned char i;
-    for (i = 0; i < 3; i++) {
-        // ~2us per loop iteration
+    long j;
+    while (i--)
+        j++;
+}
+
+// -------------------- 总线初始化 --------------------
+
+static void IIC_Init(void)
+{
+    IIC_SDA = 1;
+    IIC_SCL = 1;
+    delay_us(2);
+}
+
+// -------------------- 起始信号 --------------------
+
+static void IIC_Start(void)
+{
+    IIC_SDA = 1;          // 释放 SDA
+    delay_us(2);
+    IIC_SCL = 1;
+    delay_us(2);
+    IIC_SDA = 0;          // START: SCL 高时 SDA 下降沿
+    delay_us(2);
+    IIC_SCL = 0;          // 钳住总线，准备发送数据
+}
+
+// -------------------- 停止信号 --------------------
+
+static void IIC_Stop(void)
+{
+    IIC_SCL = 0;
+    delay_us(2);
+    IIC_SDA = 0;
+    delay_us(2);
+    IIC_SCL = 1;
+    delay_us(2);
+    IIC_SDA = 1;          // STOP: SCL 高时 SDA 上升沿
+    delay_us(2);
+}
+
+// -------------------- 发送一个字节 --------------------
+
+static void IIC_Send_Byte(unsigned char txd)
+{
+    unsigned char t;
+
+    IIC_SCL = 0;          // 拉低时钟开始传输
+    for (t = 0; t < 8; t++)
+    {
+        if (txd & 0x80)
+            IIC_SDA = 1;
+        else
+            IIC_SDA = 0;
+
+        txd <<= 1;
+        delay_us(IIC_CLK_ADJ);
+        IIC_SCL = 1;
+        delay_us(IIC_CLK_ADJ);
+        IIC_SCL = 0;
     }
 }
 
-// -------------------- I2C 总线操作 --------------------
-
-static void i2c_start(void)
-{
-    I2C_SDA_HIGH();
-    i2c_delay();
-    I2C_SCL_HIGH();
-    i2c_delay();
-    I2C_SDA_LOW();   // SDA 下降沿 → START
-    i2c_delay();
-    I2C_SCL_LOW();
-    i2c_delay();
-}
-
-static void i2c_stop(void)
-{
-    I2C_SDA_LOW();
-    i2c_delay();
-    I2C_SCL_HIGH();
-    i2c_delay();
-    I2C_SDA_HIGH();  // SDA 上升沿 → STOP
-    i2c_delay();
-}
+// -------------------- 等待 ACK (与 SDK 完整一致) --------------------
 
 /**
- * 发送一个字节, 返回 ACK (0) 或 NAK (1)
+ * 返回值: 0=收到 ACK, 1=超时/无响应
  */
-static uint8_t i2c_write_byte(uint8_t dat)
+static uint8_t IIC_Wait_Ack(void)
 {
-    uint8_t i;
-    uint8_t ack;
+    uint16_t ucErrTime = 0;
 
-    for (i = 0; i < 8; i++) {
-        if (dat & 0x80) {
-            I2C_SDA_HIGH();
-        } else {
-            I2C_SDA_LOW();
+    IIC_SDA = 1;          // 释放 SDA
+    READ_IN;              // SDA 切换为输入
+    delay_us(IIC_CLK_ADJ);
+    delay_us(IIC_CLK_ADJ);
+
+    IIC_SCL = 1;          // 第 9 个时钟
+    delay_us(IIC_CLK_ADJ);
+
+    while (READ_SDA == 1) // 等待从机拉低 SDA (ACK)
+    {
+        ucErrTime++;
+        if (ucErrTime > 2500)
+        {
+            IIC_SCL = 0;
+            IIC_SDA = 1;
+            READ_OUT;
+            IIC_Stop();
+            return 1;     // 超时, 无 ACK
         }
-        i2c_delay();
-        I2C_SCL_HIGH();     // 数据在 SCL 高电平时采样
-        i2c_delay();
-        I2C_SCL_LOW();
-        i2c_delay();
-        dat <<= 1;
     }
 
-    // 第 9 个时钟: 读取 ACK
-    I2C_SDA_HIGH();         // 释放 SDA, 等待从机拉低
-    i2c_delay();
-    I2C_SCL_HIGH();
-    i2c_delay();
-    ack = I2C_SDA_READ();   // 0=ACK, 1=NAK
-    I2C_SCL_LOW();
-    i2c_delay();
-
-    return ack;
+    IIC_SCL = 0;
+    IIC_SDA = 1;
+    READ_OUT;
+    return 0;             // 收到 ACK
 }
 
 // -------------------- 公开 API --------------------
 
-/**
- * 初始化软件 I2C 引脚
- */
 void OLED_I2C_Init(void)
 {
     // P13 = SCL (推挽输出 + 数字输入)
-    P13F = 0x82;
-    // P14 = SDA (开漏输出 + 数字输入, 需外部上拉电阻)
-    P14F = 0x81;
+    P13F = 0xA2;
+    // P14 = SDA (与 SDK 一致, 支持输入/输出切换)
+    P14F = 0xA2;
 
-    // 初始状态: 总线空闲 (SCL=1, SDA=1)
-    I2C_SCL_HIGH();
-    I2C_SDA_HIGH();
+    READ_OUT;
+    IIC_Init();
 }
 
 /**
  * 发送 I2C 数据帧: [ctrl_byte] + [data...]
  *
  * 专为 SSD1306 设计:
- *   ctrl_byte = 0x00 → 后续字节为命令
- *   ctrl_byte = 0x40 → 后续字节为显示数据
+ *   ctrl_byte = 0x00 → 命令
+ *   ctrl_byte = 0x40 → 显示数据
  *
- * @param device_addr  I2C 从机地址 (已左移1位, 如 0x78)
- * @param ctrl_byte    控制字节
- * @param buf          数据缓冲区
- * @param len          数据长度
  * @return 0=成功, 1=NAK
  */
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
@@ -121,31 +151,28 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
 {
     uint8_t i;
 
-    // START
-    i2c_start();
+    IIC_Start();
 
-    // 设备地址 (写)
-    if (i2c_write_byte(device_addr)) {
-        i2c_stop();
+    // 设备地址
+    IIC_Send_Byte(device_addr);
+    if (IIC_Wait_Ack()) {
         return 1;
     }
 
     // 控制字节
-    if (i2c_write_byte(ctrl_byte)) {
-        i2c_stop();
+    IIC_Send_Byte(ctrl_byte);
+    if (IIC_Wait_Ack()) {
         return 1;
     }
 
     // 数据字节
     for (i = 0; i < len; i++) {
-        if (i2c_write_byte(buf[i])) {
-            i2c_stop();
+        IIC_Send_Byte(buf[i]);
+        if (IIC_Wait_Ack()) {
             return 1;
         }
     }
 
-    // STOP
-    i2c_stop();
-
+    IIC_Stop();
     return 0;
 }
