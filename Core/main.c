@@ -1,9 +1,9 @@
 /**
- * main.c — SSD1306 96x16 OLED 软件 IIC 测试 (WS51F6240)
+ * main.c — SSD1306 96x16 OLED 硬件 IIC 测试 (WS51F6240)
  *
- * 硬件连接:
- *   P13 = SCL (软件 I2C)
- *   P14 = SDA (软件 I2C, 外部 4.7kΩ 上拉)
+ * 参考 SDK "19-IIC-host-硬件":
+ *   P02 = SCL (硬件 I2C)
+ *   P16 = SDA (硬件 I2C, 外部 4.7kΩ 上拉)
  *
  * 测试: 全屏矩形框闪烁
  */
@@ -71,7 +71,8 @@ void main()
 
     while (1)
     {
-		OLED_Init();            // 软件 I2C + SSD1306 初始化
+				OLED_Init();            // 软件 I2C + SSD1306 初始化
+			
         // 绘制全屏矩形框
         OLED_Clear();
         draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
