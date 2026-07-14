@@ -74,6 +74,9 @@ void main()
         // 绘制全屏矩形框
         OLED_Clear();
         draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
+			
+				OLED_DrawString(10, 3, "WS51F6240");
+				
         OLED_Flush();
         delay_ms(500);
 
