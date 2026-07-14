@@ -17,20 +17,20 @@
  */
 void OLED_I2C_Init(void)
 {
-    /* 配置硬件 IIC 引脚 */
-    P02F = 0xA5;    /* P02 = HW IIC SCL */
-    P16F = 0xA5;    /* P16 = HW IIC SDA */
+    // 配置硬件 IIC 引脚
+    P02F = 0xA5; // P02 = HW IIC SCL
+    P16F = 0xA5; // P16 = HW IIC SDA
 
-    /* I2C 时钟配置 */
-    I2CCON = 0x00;          /* Fi2c_CLK = 16MHz, 不分频 */
-    I2CFG1 = 0xff;          /* 波特率 = 16MHz / (127+8) ≈ 119kHz */
-    I2CFLG = 0x00;          /* 清除所有标志位 */
+    // I2C 时钟配置
+    I2CCON = 0x00; // Fi2c_CLK = 16MHz, 不分频
+    I2CFG1 = 0xff; // 波特率 = 16MHz / (127+8) ≈ 119kHz
+    I2CFLG = 0x00; // 清除所有标志位
 
-    /* 使能 I2C 模块 (轮询模式，关闭中断) */
-    I2CCON |= (1 << 7);     /* I2CEN = 1, 使能 I2C */
-    I2CCON &= ~(1 << 6);    /* I2CIE = 0, 关闭中断 */
-    I2CCON &= ~(1 << 5);    /* STAIE = 0, 关闭 START 中断 */
-    I2CCON &= ~(1 << 4);    /* STPIE = 0, 关闭 STOP 中断 */
+    // 使能 I2C 模块 (轮询模式，关闭中断)
+    I2CCON |= (1 << 7); // I2CEN = 1, 使能 I2C
+    I2CCON &= ~(1 << 6); // I2CIE = 0, 关闭中断
+    I2CCON &= ~(1 << 5); // STAIE = 0, 关闭 START 中断
+    I2CCON &= ~(1 << 4); // STPIE = 0, 关闭 STOP 中断
 }
 
 /**
@@ -51,34 +51,34 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
 {
     uint8_t i, ret;
 
-    I2CFLG = 0;                     /* 清除所有标志 */
+    I2CFLG = 0; // 清除所有标志
 
-    /* 发送 START + 设备地址 */
+    // 发送 START + 设备地址
     I2CTXD = device_addr;
-    I2CCON |= (1 << 3);             /* STA = 1, 产生 START */
+    I2CCON |= (1 << 3); // STA = 1, 产生 START
 
-    /* ========== 发送控制字节 ========== */
+    // -------------------- 发送控制字节 --------------------
     while (1)
     {
-        if (I2CFLG & IF_TXDAT)      /* 上一字节已发送并收到 ACK */
+        if (I2CFLG & IF_TXDAT) // 上一字节已发送并收到 ACK
         {
             I2CFLG &= ~IF_TXDAT;
-            I2CTXD = ctrl_byte;     /* 发送控制字节 */
+            I2CTXD = ctrl_byte; // 发送控制字节
             break;
         }
-        if (I2CFLG & RXNAK)         /* 收到 NAK */
+        if (I2CFLG & RXNAK) // 收到 NAK
         {
             ret = 2;
             goto i2c_stop;
         }
-        if (I2CFLG & IF_LSTARB)     /* 仲裁丢失 */
+        if (I2CFLG & IF_LSTARB) // 仲裁丢失
         {
             ret = 1;
             goto i2c_stop;
         }
     }
 
-    /* ========== 发送数据字节 ========== */
+    // -------------------- 发送数据字节 --------------------
     i = 0;
     while (1)
     {
@@ -87,9 +87,9 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
             I2CFLG &= ~IF_TXDAT;
 
             if (i >= len)
-                break;              /* 所有数据已发送完毕 */
+                break; // 所有数据已发送完毕
 
-            I2CTXD = buf[i++];       /* 发送下一个数据字节 */
+            I2CTXD = buf[i++]; // 发送下一个数据字节
         }
         if (I2CFLG & RXNAK)
         {
@@ -103,13 +103,13 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
         }
     }
 
-    /* 等待最后一个字节发送完成 */
+    // 等待最后一个字节发送完成
     while (!(I2CFLG & IF_TXDAT));
     I2CFLG &= ~IF_TXDAT;
     ret = 0;
 
 i2c_stop:
-    I2CCON |= (1 << 2);             /* STP = 1, 产生 STOP */
-    I2CFLG  = 0;                    /* 清除标志 */
+    I2CCON |= (1 << 2); // STP = 1, 产生 STOP
+    I2CFLG  = 0; // 清除标志
     return ret;
 }

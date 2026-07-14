@@ -11,12 +11,12 @@
 #include "WS51F6240.h"
 #include "oled_disp.h"
 
-/* ==================== 全局变量 ==================== */
+// -------------------- 全局变量 --------------------
 
-/* 毫秒计数器，在 Timer0 中断中递增 */
+// 毫秒计数器，在 Timer0 中断中递增
 volatile unsigned long g_tick_ms = 0;
 
-/* ==================== 定时器 & 延时 ==================== */
+// -------------------- 定时器 & 延时 --------------------
 
 /**
  * 初始化 Timer0
@@ -26,13 +26,13 @@ volatile unsigned long g_tick_ms = 0;
  */
 void init_timer0(void)
 {
-    TL0 = (65536 - 1334);            /* 初始值低字节 */
-    TH0 = (65536 - 1334) >> 8;       /* 初始值高字节 */
-    TMOD = 0x01;                     /* Timer0 Mode 1, 12T 分频 */
+    TL0 = (65536 - 1334); // 初始值低字节
+    TH0 = (65536 - 1334) >> 8; // 初始值高字节
+    TMOD = 0x01; // Timer0 Mode 1, 12T 分频
 
-    ET0 = 1;                         /* 使能 Timer0 中断 */
-    EA  = 1;                         /* 使能总中断 */
-    TR0 = 1;                         /* 启动 Timer0 */
+    ET0 = 1; // 使能 Timer0 中断
+    EA  = 1; // 使能总中断
+    TR0 = 1; // 启动 Timer0
 }
 
 /**
@@ -56,7 +56,7 @@ void delay_ms(unsigned int ms)
     while (g_tick_ms < target);
 }
 
-/* ==================== 演示函数 ==================== */
+// -------------------- 演示函数 --------------------
 
 /**
  * 绘制一个简单的动画帧: 水平移动的像素条
@@ -67,7 +67,7 @@ static void demo_scroll_bar(uint8_t pos)
 
     OLED_Clear();
 
-    /* 第 0 行 (y=0-7): 移动的方块 */
+    // 第 0 行 (y=0-7): 移动的方块
     for (x = pos; x < pos + 8 && x < OLED_WIDTH; x++) {
         OLED_SetPixel(x, 0, 1);
         OLED_SetPixel(x, 1, 1);
@@ -102,7 +102,7 @@ static void demo_text(uint8_t page)
     OLED_Flush();
 }
 
-/* ==================== 主函数 ==================== */
+// -------------------- 主函数 --------------------
 
 void main()
 {
@@ -110,11 +110,11 @@ void main()
     uint8_t  bar_pos;
     uint16_t wait;
 
-    /* 系统时钟: HRC 16MHz */
+    // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
     HRCON |= 0x80;
 
-    /* 初始化 Timer0 (1ms tick) */
+    // 初始化 Timer0 (1ms tick)
     init_timer0();
 
     /*
@@ -124,19 +124,19 @@ void main()
      */
     OLED_Init();
 
-    /* 开机显示 */
+    // 开机显示
     OLED_Clear();
     OLED_DrawString(5, 1, "WS51F6240");
     OLED_Flush();
     delay_ms(1500);
 
-    /* ========== 主循环: 交替显示文字和动画 ========== */
+    // -------------------- 主循环: 交替显示文字和动画 --------------------
     demo_idx = 0;
     bar_pos  = 0;
 
     while (1)
     {
-        /* --- 阶段 1: 显示文字 (每种文字显示 2 秒) --- */
+        // -------------------- 阶段 1: 显示文字 (每种文字显示 2 秒) --------------------
         demo_text(demo_idx);
         delay_ms(2000);
 
@@ -144,7 +144,7 @@ void main()
         if (demo_idx >= 4)
             demo_idx = 0;
 
-        /* --- 阶段 2: 滚动条动画 (约 3 秒) --- */
+        // -------------------- 阶段 2: 滚动条动画 (约 3 秒) --------------------
         for (bar_pos = 0; bar_pos < OLED_WIDTH - 8; bar_pos++) {
             demo_scroll_bar(bar_pos);
             delay_ms(30);
@@ -154,9 +154,9 @@ void main()
             delay_ms(30);
         }
 
-        /* 简单的防 watchdog 延时 */
+        // 简单的防 watchdog 延时
         for (wait = 0; wait < 1000; wait++) {
-            /* nop */
+            // nop
         }
     }
 }

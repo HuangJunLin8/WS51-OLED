@@ -15,10 +15,10 @@
 
 #include "WS51F6240.h"
 
-/* SSD1306 I2C 从机地址 (7-bit: 0x3C, 左移1位 = 0x78) */
+// SSD1306 I2C 从机地址 (7-bit: 0x3C, 左移1位 = 0x78)
 #define OLED_I2C_ADDR   0x78
 
-/* I2CFLG 标志位 (与 SDK 一致) */
+// I2CFLG 标志位 (与 SDK 一致)
 #define BUSIDLE    0x80
 #define RXNAK      0x40
 #define IF_LSTARB  0x20
@@ -28,10 +28,10 @@
 #define IF_RXDAT   0x02
 #define IF_RXADR   0x01
 
-/* ==================== 函数声明 ==================== */
+// -------------------- 函数声明 --------------------
 
 void OLED_I2C_Init(void);
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
                       const uint8_t *buf, uint8_t len);
 
-#endif /* OLED_I2C_H */
+#endif // OLED_I2C_H

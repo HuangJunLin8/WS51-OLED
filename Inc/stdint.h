@@ -41,13 +41,13 @@ typedef signed int     int16_t;
 typedef signed long    int32_t;
 #endif
 
-/* C51 指针: 通用指针 3 字节 (generic pointer) */
+// C51 指针: 通用指针 3 字节 (generic pointer)
 #ifndef _UINTPTR_T_DEFINED
 #define _UINTPTR_T_DEFINED
 typedef unsigned int   uintptr_t;
 #endif
 
-/* 其他可能用到的宏 */
+// 其他可能用到的宏
 #define INT8_MIN    (-128)
 #define INT8_MAX    127
 #define UINT8_MAX   255
@@ -58,4 +58,4 @@ typedef unsigned int   uintptr_t;
 #define INT32_MAX   2147483647L
 #define UINT32_MAX  4294967295UL
 
-#endif /* _STDINT_H_ */
+#endif // _STDINT_H_

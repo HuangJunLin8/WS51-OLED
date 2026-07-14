@@ -36,7 +36,7 @@
 
 #include "stdint.h"
 
-/* ==================== 字体解码结构体 ==================== */
+// -------------------- 字体解码结构体 --------------------
 
 typedef struct {
     const uint8_t *decode_ptr;
@@ -49,7 +49,7 @@ typedef struct {
     uint8_t  decode_bit_pos;
 } font_decode_t;
 
-/* 字体信息 (从字体数据头部解析) */
+// 字体信息 (从字体数据头部解析)
 typedef struct {
     uint8_t  glyph_cnt;
     uint8_t  bbx_mode;
@@ -73,14 +73,14 @@ typedef struct {
     uint16_t start_pos_unicode;
 } font_info_t;
 
-/* 字体主结构体 */
+// 字体主结构体
 typedef struct {
-    const uint8_t *font_type;       /* 指向字体数据 */
+    const uint8_t *font_type; // 指向字体数据
     font_decode_t  font_decode;
     font_info_t    font_info;
 } font_t;
 
-/* ==================== 函数声明 ==================== */
+// -------------------- 函数声明 --------------------
 
 void Font_Init(font_t *f);
 void Font_SetType(font_t *f, const uint8_t *font_buf);
@@ -88,8 +88,8 @@ uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str);
 uint8_t Font_GetStrWidth(font_t *f, const char *str);
 uint8_t Font_GetHeight(font_t *f);
 
-/* ==================== 字体数据声明 ==================== */
+// -------------------- 字体数据声明 --------------------
 
 extern const uint8_t code FONT_Terminus_14[];
 
-#endif /* FONT_H */
+#endif // FONT_H

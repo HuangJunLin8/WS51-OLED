@@ -263,86 +263,86 @@ sbit P17 = P1^7;
 //sbit P36 = P3^6;	//6232
 //sbit P37 = P3^7; 	//6232
 
-/* �ж����ȼ��Ĵ��� IP (B8H) */
-sbit PX3 = IP^6;		/* INT4 ���ȼ�����λ������ Touch Key/WDT/LVD/WKT/EP1 �ж� */
-sbit PX2 = IP^5;		/* INT3 ���ȼ�����λ�� ���� IIC/Timer2/PWM/EP0 �ж� */
-sbit PS0 = IP^4;		/* INT2 ���ȼ�����λ������ UART0 �ж� */
-sbit PT1 = IP^3;		/* Timer 1 ���ȼ�����λ */
-sbit PX1 = IP^2;		/* INT1 ���ȼ�����λ */
-sbit PT0 = IP^1;		/* Timer 0 ���ȼ�����λ */
-sbit PX0 = IP^0;		/* INT0 ���ȼ�����λ */
+// 中断优先级寄存器 IP (B8H)
+sbit PX3 = IP^6; // INT4 优先级控制位，用于 Touch Key/WDT/LVD/WKT/EP1 中断
+sbit PX2 = IP^5; // INT3 优先级控制位， 用于 IIC/Timer2/PWM/EP0 中断
+sbit PS0 = IP^4; // INT2 优先级控制位，用于 UART0 中断
+sbit PT1 = IP^3; // Timer 1 优先级控制位
+sbit PX1 = IP^2; // INT1 优先级控制位
+sbit PT0 = IP^1; // Timer 0 优先级控制位
+sbit PX0 = IP^0; // INT0 优先级控制位
 
-/* �ж����ȼ��Ĵ��� EXIP (F8H) */
-sbit PX6 = EXIP^2;		/* INT6 ���ȼ�����λ������ RTC/UART2/Timer 4/EP4 �ж� */
-sbit PX5 = EXIP^1;		/* INT5 ���ȼ�����λ������ ADC/SPI/Timer 4/SCM/EP3 �ж� */
-sbit PX4 = EXIP^0;		/* INT4 ���ȼ�����λ������ CMP/UART1/Timer 3/EP2 �ж� */
+// 中断优先级寄存器 EXIP (F8H)
+sbit PX6 = EXIP^2; // INT6 优先级控制位，用于 RTC/UART2/Timer 4/EP4 中断
+sbit PX5 = EXIP^1; // INT5 优先级控制位，用于 ADC/SPI/Timer 4/SCM/EP3 中断
+sbit PX4 = EXIP^0; // INT4 优先级控制位，用于 CMP/UART1/Timer 3/EP2 中断
 
-/* �ж�ʹ�ܼĴ��� IE (A8H) */
-sbit EA = 	 IE^7;		/* ȫ���ж�ʹ�ܿ���λ */
-sbit EINT3 = IE^6;		/* ���� Touch Key/WDT/LVD/WKT/EP1 �ж� */
-sbit EINT2 = IE^5;		/* ���� IIC/Timer2/PWM/EP0 �ж� */
-sbit ES0 = IE^4;		/* UART0 �ж� */
-sbit ET1 = 	 IE^3;		/* ��ʱ�� 1 �ж�ʹ�ܿ���λ */
-sbit EINT1 = IE^2;		/* �ж� 1 ʹ�ܿ���λ���ж� 1 �����ⲿ�ж� 1�� */
-sbit ET0 = 	 IE^1;		/* ��ʱ�� 0 �ж�ʹ�ܿ���λ */
-sbit EINT0 = IE^0;		/* 0 ʹ�ܿ���λ���ж� 0 �����ⲿ�ж� 0�� */
+// 中断使能寄存器 IE (A8H)
+sbit EA = 	 IE^7; // 全局中断使能控制位
+sbit EINT3 = IE^6; // 用于 Touch Key/WDT/LVD/WKT/EP1 中断
+sbit EINT2 = IE^5; // 用于 IIC/Timer2/PWM/EP0 中断
+sbit ES0 = IE^4; // UART0 中断
+sbit ET1 = 	 IE^3; // 定时器 1 中断使能控制位
+sbit EINT1 = IE^2; // 中断 1 使能控制位（中断 1 用于外部中断 1）
+sbit ET0 = 	 IE^1; // 定时器 0 中断使能控制位
+sbit EINT0 = IE^0; // 0 使能控制位（中断 0 用于外部中断 0）
 
-/* �ж�ʹ�ܼĴ��� EXIE (E8H) */
-sbit EINT6 = EXIE^2;		/* INT7 �ж�ʹ�ܿ���λ������ RTC/UART2/Timer 4/EP4 �ж� */	//6652
-sbit EINT5 = EXIE^1;		/* INT5 �ж�ʹ�ܿ���λ������ ADC/SPI/SCM/EP3 �ж� */
-sbit EINT4 = EXIE^0;		/* INT4 ʹ�ܿ���λ������ UART1/Timer3/EP2 �ж� */
+// 中断使能寄存器 EXIE (E8H)
+sbit EINT6 = EXIE^2;		/* INT7 中断使能控制位，用于 RTC/UART2/Timer 4/EP4 中断 */	//6652
+sbit EINT5 = EXIE^1; // INT5 中断使能控制位，用于 ADC/SPI/SCM/EP3 中断
+sbit EINT4 = EXIE^0; // INT4 使能控制位，用于 UART1/Timer3/EP2 中断
 
-/* �ⲿ�ж�ʹ�ܼĴ��� EPIE (D8H) */
-sbit EP3IE = EPIE^3;		/* EP3 �ж�ʹ���ź� */
-sbit EP2IE = EPIE^2;		/* EP2 �ж�ʹ���ź� */
-sbit EP1IE = EPIE^1;		/* EP1 �ж�ʹ���ź� */
-sbit EP0IE = EPIE^0;		/* EP0 �ж�ʹ���ź� */
+// 外部中断使能寄存器 EPIE (D8H)
+sbit EP3IE = EPIE^3; // EP3 中断使能信号
+sbit EP2IE = EPIE^2; // EP2 中断使能信号
+sbit EP1IE = EPIE^1; // EP1 中断使能信号
+sbit EP0IE = EPIE^0; // EP0 中断使能信号
 
-/* ����UART0�Ĵ��� S0CON (98H) */
-sbit SM00 = S0CON^7;	/* ���� 0 ģʽѡ��λ�� */
-sbit SM10 = S0CON^6;	/* ���� 0 ģʽѡ��λ�� */
-sbit SM20 = S0CON^5;	/* ���ͨ��ʹ��λ�� 1 ��Ч */
-sbit REN0 = S0CON^4;	/* ���н���ʹ��λ�� 1 ��Ч */
-sbit TB80 = S0CON^3;	/* ���͵ĵ� 9 λ���� */
-sbit RB80 = S0CON^2;	/* ���յĵ� 9 λ���� */
-sbit TI0 = 	S0CON^1;	/* �����жϱ�־�� 1 ��Ч��д 0 ��� */
-sbit RI0 =  S0CON^0;	/* �����жϱ�־�� 1 ��Ч��д 0 ��� */
+// 串口UART0寄存器 S0CON (98H)
+sbit SM00 = S0CON^7; // 串口 0 模式选择位，
+sbit SM10 = S0CON^6; // 串口 0 模式选择位，
+sbit SM20 = S0CON^5; // 多机通信使能位， 1 有效
+sbit REN0 = S0CON^4; // 串行接收使能位， 1 有效
+sbit TB80 = S0CON^3; // 发送的第 9 位数据
+sbit RB80 = S0CON^2; // 接收的第 9 位数据
+sbit TI0 = 	S0CON^1; // 发送中断标志， 1 有效，写 0 清除
+sbit RI0 =  S0CON^0; // 接收中断标志， 1 有效，写 0 清除
 
-/* ��ʱ��0/1 TCON (88H) */
-sbit TF1 = TCON^7;		/* ��ʱ�� 0 ģʽ 3 �� TH0 ���/��ʱ�� 1 �����־λ���жϱ���Ӧ���Զ��� 0. */
-sbit TR1 = TCON^6;		/* ��ʱ�� 1 ���п���λ�� 1 ��Ч */
-sbit TF0 = TCON^5;		/* ��ʱ�� 0 �����־λ���жϱ���Ӧ���Զ��� 0 */
-sbit TR0 = TCON^4;		/* ��ʱ�� 0 ���п���λ�� 1 ��Ч */
-sbit IE1 = TCON^3;		/* �ⲿ�ж� 1 ʹ��λ�� 1 ��Ч */
-sbit IT1 = TCON^2;		/* �ⲿ�ж� 1 �������Ϳ���λ */
-sbit IE0 = TCON^1;		/* �ⲿ�ж� 0 ʹ��λ�� 1 ��Ч */
-sbit IT0 = TCON^0;		/* �ⲿ�ж� 0 �������Ϳ���λ */
+// 定时器0/1 TCON (88H)
+sbit TF1 = TCON^7; // 定时器 0 模式 3 的 TH0 溢出/定时器 1 溢出标志位，中断被响应后自动清 0.
+sbit TR1 = TCON^6; // 定时器 1 运行控制位， 1 有效
+sbit TF0 = TCON^5; // 定时器 0 溢出标志位，中断被响应后自动清 0
+sbit TR0 = TCON^4; // 定时器 0 运行控制位， 1 有效
+sbit IE1 = TCON^3; // 外部中断 1 使能位， 1 有效
+sbit IT1 = TCON^2; // 外部中断 1 触发类型控制位
+sbit IE0 = TCON^1; // 外部中断 0 使能位， 1 有效
+sbit IT0 = TCON^0; // 外部中断 0 触发类型控制位
 
-/* ��ʱ��2 T2CON (C8H) */
-sbit TF2 =   T2CON^7;		/* ��ʱ�� 2 �����־λ�� �� RCLK �� TCLK Ϊ 1�� TF2 ���ᱻ�� 1 */
-sbit EXF2 =  T2CON^6;		/* T2EX ������־�� */
-sbit RCLK =  T2CON^5;		/* UART0 ��ģʽ 1 �� 3 ʱʹ�ö�ʱ�� 1/2 ��Ϊ���ղ�����ʱ�� */
-sbit TCLK =  T2CON^4;		/* UART0 ��ģʽ 1 �� 3 ʱʹ�ö�ʱ�� 1/2 ��Ϊ���Ͳ�����ʱ�� */
-sbit EXEN2 = T2CON^3;		/* T2EX ʹ���źţ��ڶ�ʱ��û����Ϊ UART0 ʱ��ʱ T2EX ��Ч */
-sbit TR2 =   T2CON^2;		/* ��ʱ�� 2 �����źţ� 1 ��Ч */
-sbit CT2 =   T2CON^1;		/* ��ʱ���ܻ��������ѡ���ź� */
-sbit CPRL2 = T2CON^0;		/* ץȡ�����ع���ѡ���źš��� RCLK �� TCLK Ϊ 1 ʱ����ʱ��ǿ�ƽ��� Timer 2 ����ģʽ */
+// 定时器2 T2CON (C8H)
+sbit TF2 =   T2CON^7; // 定时器 2 溢出标志位。 当 RCLK 或 TCLK 为 1， TF2 不会被置 1
+sbit EXF2 =  T2CON^6; // T2EX 触发标志。
+sbit RCLK =  T2CON^5; // UART0 在模式 1 和 3 时使用定时器 1/2 作为接收波特率时钟
+sbit TCLK =  T2CON^4; // UART0 在模式 1 和 3 时使用定时器 1/2 作为发送波特率时钟
+sbit EXEN2 = T2CON^3; // T2EX 使能信号，在定时器没有作为 UART0 时钟时 T2EX 有效
+sbit TR2 =   T2CON^2; // 定时器 2 启动信号， 1 有效
+sbit CT2 =   T2CON^1; // 定时功能或计数功能选择信号
+sbit CPRL2 = T2CON^0; // 抓取或重载功能选择信号。当 RCLK 或 TCLK 为 1 时，定时器强制进入 Timer 2 重载模式
 
-/* ģ��ת���� ADCON (C0H) */
-sbit ADST =  ADCON^7;		/* ADC ת����ʼ����λ��д 1 ����ת����ת����Ӳ���Զ��� 0 */
-sbit ADIE =  ADCON^6;		/* ADC �ж�ʹ��λ */
-sbit ADCF =  ADCON^0;		/* ADC ������ɱ�־ */
+// 模数转换器 ADCON (C0H)
+sbit ADST =  ADCON^7; // ADC 转换开始控制位，写 1 启动转换，转换后硬件自动清 0
+sbit ADIE =  ADCON^6; // ADC 中断使能位
+sbit ADCF =  ADCON^0; // ADC 采样完成标志
 
 
-/* ����UART1 �Ĵ���S1CON (9BH) ����λѰַ */
-#define SM11    0x80		/* ����ģʽѡ�� */
-#define IE1     0x40		/* �ж�ʹ�ܣ� 1 ��Ч */
-#define SM21    0x20		/* ���ͨ��ʹ��λ�� 1 ��Ч */
-#define REN1    0x10		/* ���н���ʹ��λ�� 1 ��Ч */
-#define TB81    0x08		/* ���͵ĵ� 9 λ���� */
-#define RB81    0x04		/* ���յĵ� 9 λ���� */
-#define TI1     0x02		/* �����жϱ�־�� 1 ��Ч��д 0 ��� */
-#define RI1     0x01		/* �����жϱ�־�� 1 ��Ч��д 0 ��� */
+// 串口UART1 寄存器S1CON (9BH) 不可位寻址
+#define SM11    0x80 // 工作模式选择
+#define IE1     0x40 // 中断使能， 1 有效
+#define SM21    0x20 // 多机通信使能位， 1 有效
+#define REN1    0x10 // 串行接收使能位， 1 有效
+#define TB81    0x08 // 发送的第 9 位数据
+#define RB81    0x04 // 接收的第 9 位数据
+#define TI1     0x02 // 发送中断标志， 1 有效，写 0 清除
+#define RI1     0x01 // 接收中断标志， 1 有效，写 0 清除
 
 #define ROR_8BIT(X,Y) ((X<<(8-Y))|(X>>Y))
 #define ROL_8BIT(X,Y) ((X>>(8-Y))|(X<<Y)) 
@@ -350,30 +350,12 @@ sbit ADCF =  ADCON^0;		/* ADC ������ɱ�־ */
 typedef 	unsigned char	u8;
 typedef 	unsigned int	u16;
 typedef 	unsigned long	u32;
-#ifndef _UINT8_T_DEFINED
-#define _UINT8_T_DEFINED
 typedef     unsigned char   uint8_t;
-#endif
-#ifndef _UINT16_T_DEFINED
-#define _UINT16_T_DEFINED
 typedef     unsigned int    uint16_t;
-#endif
-#ifndef _UINT32_T_DEFINED
-#define _UINT32_T_DEFINED
 typedef     unsigned long   uint32_t;
-#endif
 
-#ifndef _INT8_T_DEFINED
-#define _INT8_T_DEFINED
 typedef     signed char     int8_t;
-#endif
-#ifndef _INT16_T_DEFINED
-#define _INT16_T_DEFINED
 typedef     signed int      int16_t;
-#endif
-#ifndef _INT32_T_DEFINED
-#define _INT32_T_DEFINED
 typedef     signed long     int32_t;
-#endif
 #endif
 

@@ -13,15 +13,15 @@
 #include "oled_disp.h"
 #include "oled_i2c.h"
 
-/* ==================== 帧缓冲区 ==================== */
+// -------------------- 帧缓冲区 --------------------
 
-/* 192 字节帧缓冲区, 放在 XDATA */
+// 192 字节帧缓冲区, 放在 XDATA
 uint8_t xdata g_oled_fb[OLED_WIDTH * OLED_PAGES];
 
-/* 当前字体 */
+// 当前字体
 static font_t g_font;
 
-/* ==================== 内部函数 ==================== */
+// -------------------- 内部函数 --------------------
 
 /**
  * 发送单字节命令到 SSD1306
@@ -41,7 +41,7 @@ static void oled_write_cmds(const uint8_t *cmds, uint8_t len)
     OLED_I2C_Send(OLED_I2C_ADDR, 0x00, cmds, len);
 }
 
-/* ==================== 公开 API ==================== */
+// -------------------- 公开 API --------------------
 
 /**
  * 初始化 OLED
@@ -55,91 +55,91 @@ void OLED_Init(void)
 {
     uint8_t i;
 
-    /* === 第1步: 初始化硬件 IIC === */
+    // -------------------- 第1步: 初始化硬件 IIC --------------------
     OLED_I2C_Init();
 
-    /* === 第2步: SSD1306 初始化命令序列 === */
-    /* 参考: u8x8_d_ssd1306_96x16_er_init_seq (EastRising 0.69" OLED) */
+    // -------------------- 第2步: SSD1306 初始化命令序列 --------------------
+    // 参考: u8x8_d_ssd1306_96x16_er_init_seq (EastRising 0.69" OLED)
 
-    /* 显示关闭 */
+    // 显示关闭
     oled_write_cmd(0xAE);
 
-    /* 时钟分频 + 振荡频率 */
+    // 时钟分频 + 振荡频率
     {
         const uint8_t cmd[] = {0xD5, 0x80};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 多路复用比 = 15 (16 行) */
+    // 多路复用比 = 15 (16 行)
     {
         const uint8_t cmd[] = {0xA8, 0x0F};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 显示偏移 = 0 */
+    // 显示偏移 = 0
     {
         const uint8_t cmd[] = {0xD3, 0x00};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 显示起始行 = 0 */
+    // 显示起始行 = 0
     oled_write_cmd(0x40);
 
-    /* 电荷泵使能 */
+    // 电荷泵使能
     {
         const uint8_t cmd[] = {0x8D, 0x14};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 水平寻址模式 */
+    // 水平寻址模式
     {
         const uint8_t cmd[] = {0x20, 0x00};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 段重映射 (左右翻转) */
+    // 段重映射 (左右翻转)
     oled_write_cmd(0xA1);
 
-    /* COM 扫描方向 (上下翻转) */
+    // COM 扫描方向 (上下翻转)
     oled_write_cmd(0xC8);
 
-    /* COM 引脚配置 */
+    // COM 引脚配置
     {
         const uint8_t cmd[] = {0xDA, 0x02};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 对比度 */
+    // 对比度
     {
         const uint8_t cmd[] = {0x81, 0xAF};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 预充电周期 */
+    // 预充电周期
     {
         const uint8_t cmd[] = {0xD9, 0xF1};
         oled_write_cmds(cmd, 2);
     }
 
-    /* VCOMH 取消选择电平 */
+    // VCOMH 取消选择电平
     {
         const uint8_t cmd[] = {0xDB, 0x20};
         oled_write_cmds(cmd, 2);
     }
 
-    /* 停用滚动 */
+    // 停用滚动
     oled_write_cmd(0x2E);
 
-    /* 显示跟随 RAM 内容 */
+    // 显示跟随 RAM 内容
     oled_write_cmd(0xA4);
 
-    /* 正常显示 (非反转) */
+    // 正常显示 (非反转)
     oled_write_cmd(0xA6);
 
-    /* 显示开启 */
+    // 显示开启
     oled_write_cmd(0xAF);
 
-    /* === 第3步: 初始化帧缓冲区和字体 === */
+    // -------------------- 第3步: 初始化帧缓冲区和字体 --------------------
     for (i = 0; i < sizeof(g_oled_fb); i++) {
         g_oled_fb[i] = 0x00;
     }
@@ -169,19 +169,19 @@ void OLED_Clear(void)
 void OLED_Flush(void)
 {
     uint8_t page;
-    /* col not needed in page mode */
+    // col not needed in page mode
 
     for (page = 0; page < OLED_PAGES; page++) {
 
-        /* 设置页地址 */
+        // 设置页地址
         oled_write_cmd((uint8_t)(0xB0 | page));
 
-        /* 设置列地址低半字节 */
+        // 设置列地址低半字节
         oled_write_cmd(0x00);
-        /* 设置列地址高半字节 */
+        // 设置列地址高半字节
         oled_write_cmd(0x10);
 
-        /* 发送本页 96 字节数据 */
+        // 发送本页 96 字节数据
         OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
                       &g_oled_fb[page * OLED_WIDTH],
                       OLED_WIDTH);
