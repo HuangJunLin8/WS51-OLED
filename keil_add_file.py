@@ -3,8 +3,6 @@ import glob
 import xml.etree.ElementTree as ET
 import argparse
 
-from multiprocessing import Event
-
 def indent(elem, level=0):
     """ Helper function to indent the XML for pretty printing. """
     i = "\n" + level * "    "
@@ -94,8 +92,10 @@ def add_files_to_group(uvprojx_file_path, mode,folder_path, group_name_target):
   
         # 遍历指定文件夹，查找所有 .c 文件  
         if mode == 0 or mode == 2:
-            #print(heard_inc.text)  
-            heard_data = heard_inc.text + ";"   #末尾需要先加一个分号   
+            #print(heard_inc.text)
+            if heard_inc.text is None:
+                heard_inc.text = ""
+            heard_data = heard_inc.text + ";"   #末尾需要先加一个分号
             
         for subdir, _, files in os.walk(folder_path):
             #.h路径
@@ -209,6 +209,3 @@ if __name__ == "__main__":
     uvprojx_file_path = find_uvprojx_file()
     if uvprojx_file_path:
         add_files_to_group(uvprojx_file_path, args[0],args[1],args[2])
-
-    event = Event()
-    event.wait()

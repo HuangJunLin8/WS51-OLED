@@ -233,7 +233,7 @@
               <RCB>
                 <Type>0</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x0</Size>
+                <Size>0xffff</Size>
               </RCB>
               <RXB>
                 <Type>0</Type>
@@ -324,7 +324,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath></IncludePath>
+              <IncludePath>.\Inc;Core\BSP\OLED;Libs\Font</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>
@@ -395,9 +395,33 @@
         </Group>
         <Group>
           <GroupName>OLED</GroupName>
+          <Files>
+            <File>
+              <FileName>oled_disp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>Core\BSP\OLED\oled_disp.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>Core\BSP\OLED\oled_i2c.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>Font</GroupName>
+          <Files>
+            <File>
+              <FileName>font.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>Libs\Font\font.c</FilePath>
+            </File>
+            <File>
+              <FileName>font_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>Libs\Font\font_data.c</FilePath>
+            </File>
+          </Files>
         </Group>
       </Groups>
     </Target>
