@@ -1,115 +1,151 @@
 /**
- * oled_i2c.c — SSD1306 硬件 IIC 驱动实现
+ * oled_i2c.c — SSD1306 软件 I2C 驱动实现
  *
- * 基于 SDK 19-IIC-host-硬件 示例改写，适配 SSD1306 OLED。
- * 使用轮询模式（非中断），简化 8051 移植。
+ * GPIO 模拟 I2C 主机, ~100kHz @ 16MHz:
+ *   P13 = SCL (推挽输出)
+ *   P14 = SDA (开漏输出, 需外部 4.7kΩ 上拉)
  */
 
 #include "oled_i2c.h"
 
-/**
- * 初始化硬件 IIC 模块
- *
- * - P02 配置为 HW IIC SCL  (0xA5)
- * - P16 配置为 HW IIC SDA  (0xA5)
- * - 时钟: Fi2c = 16MHz / (127+8) ≈ 119kHz
- * - 轮询模式（关闭 I2C 中断）
- */
-void OLED_I2C_Init(void)
+// -------------------- 引脚宏 --------------------
+
+#define I2C_SCL_HIGH()   (P13 = 1)
+#define I2C_SCL_LOW()    (P13 = 0)
+#define I2C_SDA_HIGH()   (P14 = 1)  // 开漏: 写1释放总线
+#define I2C_SDA_LOW()    (P14 = 0)  // 开漏: 写0拉低
+#define I2C_SDA_READ()   (P14)      // 读 SDA 电平
+
+// -------------------- 软件延时 (~5us @16MHz/12T) --------------------
+
+static void i2c_delay(void)
 {
-    // 配置硬件 IIC 引脚
-    P02F = 0xA5; // P02 = HW IIC SCL
-    P16F = 0xA5; // P16 = HW IIC SDA
+    // 每个 nop = 0.75us, 5us ≈ 7 nop
+    // 考虑函数调用开销, 约 5us
+    unsigned char i;
+    for (i = 0; i < 3; i++) {
+        // ~2us per loop iteration
+    }
+}
 
-    // I2C 时钟配置
-    I2CCON = 0x00; // Fi2c_CLK = 16MHz, 不分频
-    I2CFG1 = 0xff; // 波特率 = 16MHz / (127+8) ≈ 119kHz
-    I2CFLG = 0x00; // 清除所有标志位
+// -------------------- I2C 总线操作 --------------------
 
-    // 使能 I2C 模块 (轮询模式，关闭中断)
-    I2CCON |= (1 << 7); // I2CEN = 1, 使能 I2C
-    I2CCON &= ~(1 << 6); // I2CIE = 0, 关闭中断
-    I2CCON &= ~(1 << 5); // STAIE = 0, 关闭 START 中断
-    I2CCON &= ~(1 << 4); // STPIE = 0, 关闭 STOP 中断
+static void i2c_start(void)
+{
+    I2C_SDA_HIGH();
+    i2c_delay();
+    I2C_SCL_HIGH();
+    i2c_delay();
+    I2C_SDA_LOW();   // SDA 下降沿 → START
+    i2c_delay();
+    I2C_SCL_LOW();
+    i2c_delay();
+}
+
+static void i2c_stop(void)
+{
+    I2C_SDA_LOW();
+    i2c_delay();
+    I2C_SCL_HIGH();
+    i2c_delay();
+    I2C_SDA_HIGH();  // SDA 上升沿 → STOP
+    i2c_delay();
 }
 
 /**
- * 发送 I2C 数据: [ctrl_byte] + [data...]
+ * 发送一个字节, 返回 ACK (0) 或 NAK (1)
+ */
+static uint8_t i2c_write_byte(uint8_t dat)
+{
+    uint8_t i;
+    uint8_t ack;
+
+    for (i = 0; i < 8; i++) {
+        if (dat & 0x80) {
+            I2C_SDA_HIGH();
+        } else {
+            I2C_SDA_LOW();
+        }
+        i2c_delay();
+        I2C_SCL_HIGH();     // 数据在 SCL 高电平时采样
+        i2c_delay();
+        I2C_SCL_LOW();
+        i2c_delay();
+        dat <<= 1;
+    }
+
+    // 第 9 个时钟: 读取 ACK
+    I2C_SDA_HIGH();         // 释放 SDA, 等待从机拉低
+    i2c_delay();
+    I2C_SCL_HIGH();
+    i2c_delay();
+    ack = I2C_SDA_READ();   // 0=ACK, 1=NAK
+    I2C_SCL_LOW();
+    i2c_delay();
+
+    return ack;
+}
+
+// -------------------- 公开 API --------------------
+
+/**
+ * 初始化软件 I2C 引脚
+ */
+void OLED_I2C_Init(void)
+{
+    // P13 = SCL (推挽输出 + 数字输入)
+    P13F = 0x82;
+    // P14 = SDA (开漏输出 + 数字输入, 需外部上拉电阻)
+    P14F = 0x81;
+
+    // 初始状态: 总线空闲 (SCL=1, SDA=1)
+    I2C_SCL_HIGH();
+    I2C_SDA_HIGH();
+}
+
+/**
+ * 发送 I2C 数据帧: [ctrl_byte] + [data...]
  *
  * 专为 SSD1306 设计:
  *   ctrl_byte = 0x00 → 后续字节为命令
  *   ctrl_byte = 0x40 → 后续字节为显示数据
  *
  * @param device_addr  I2C 从机地址 (已左移1位, 如 0x78)
- * @param ctrl_byte    控制字节 (0x00=命令, 0x40=数据)
- * @param data         数据缓冲区指针
+ * @param ctrl_byte    控制字节
+ * @param buf          数据缓冲区
  * @param len          数据长度
- * @return 0=成功, 1=仲裁丢失, 2=收到 NAK
+ * @return 0=成功, 1=NAK
  */
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
                       const uint8_t *buf, uint8_t len)
 {
-    uint8_t i, ret;
+    uint8_t i;
 
-    I2CFLG = 0; // 清除所有标志
+    // START
+    i2c_start();
 
-    // 发送 START + 设备地址
-    I2CTXD = device_addr;
-    I2CCON |= (1 << 3); // STA = 1, 产生 START
+    // 设备地址 (写)
+    if (i2c_write_byte(device_addr)) {
+        i2c_stop();
+        return 1;
+    }
 
-    // -------------------- 发送控制字节 --------------------
-    while (1)
-    {
-        if (I2CFLG & IF_TXDAT) // 上一字节已发送并收到 ACK
-        {
-            I2CFLG &= ~IF_TXDAT;
-            I2CTXD = ctrl_byte; // 发送控制字节
-            break;
-        }
-        if (I2CFLG & RXNAK) // 收到 NAK
-        {
-            ret = 2;
-            goto i2c_stop;
-        }
-        if (I2CFLG & IF_LSTARB) // 仲裁丢失
-        {
-            ret = 1;
-            goto i2c_stop;
+    // 控制字节
+    if (i2c_write_byte(ctrl_byte)) {
+        i2c_stop();
+        return 1;
+    }
+
+    // 数据字节
+    for (i = 0; i < len; i++) {
+        if (i2c_write_byte(buf[i])) {
+            i2c_stop();
+            return 1;
         }
     }
 
-    // -------------------- 发送数据字节 --------------------
-    i = 0;
-    while (1)
-    {
-        if (I2CFLG & IF_TXDAT)
-        {
-            I2CFLG &= ~IF_TXDAT;
+    // STOP
+    i2c_stop();
 
-            if (i >= len)
-                break; // 所有数据已发送完毕
-
-            I2CTXD = buf[i++]; // 发送下一个数据字节
-        }
-        if (I2CFLG & RXNAK)
-        {
-            ret = 2;
-            goto i2c_stop;
-        }
-        if (I2CFLG & IF_LSTARB)
-        {
-            ret = 1;
-            goto i2c_stop;
-        }
-    }
-
-    // 等待最后一个字节发送完成
-    while (!(I2CFLG & IF_TXDAT));
-    I2CFLG &= ~IF_TXDAT;
-    ret = 0;
-
-i2c_stop:
-    I2CCON |= (1 << 2); // STP = 1, 产生 STOP
-    I2CFLG  = 0; // 清除标志
-    return ret;
+    return 0;
 }

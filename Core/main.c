@@ -1,9 +1,9 @@
 /**
- * main.c — SSD1306 96x16 OLED 硬件 IIC 演示 (WS51F6240)
+ * main.c — SSD1306 96x16 OLED 软件 IIC 演示 (WS51F6240)
  *
  * 硬件连接:
- *   P02 = SCL (硬件 IIC)
- *   P16 = SDA (硬件 IIC, 也是调试/下载接口)
+ *   P13 = SCL (软件 I2C, 推挽输出)
+ *   P14 = SDA (软件 I2C, 开漏 + 外部 4.7kΩ 上拉)
  *
  * 功能: 在 0.69" OLED 上演示文字绘制
  */
