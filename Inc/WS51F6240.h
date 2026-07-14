@@ -350,12 +350,34 @@ sbit ADCF =  ADCON^0; // ADC 采样完成标志
 typedef 	unsigned char	u8;
 typedef 	unsigned int	u16;
 typedef 	unsigned long	u32;
+#ifndef _UINT8_T_DEFINED
+#define _UINT8_T_DEFINED
 typedef     unsigned char   uint8_t;
-typedef     unsigned int    uint16_t;
-typedef     unsigned long   uint32_t;
+#endif
 
+#ifndef _UINT16_T_DEFINED
+#define _UINT16_T_DEFINED
+typedef     unsigned int    uint16_t;
+#endif
+
+#ifndef _UINT32_T_DEFINED
+#define _UINT32_T_DEFINED
+typedef     unsigned long   uint32_t;
+#endif
+
+#ifndef _INT8_T_DEFINED
+#define _INT8_T_DEFINED
 typedef     signed char     int8_t;
+#endif
+
+#ifndef _INT16_T_DEFINED
+#define _INT16_T_DEFINED
 typedef     signed int      int16_t;
+#endif
+
+#ifndef _INT32_T_DEFINED
+#define _INT32_T_DEFINED
 typedef     signed long     int32_t;
+#endif
 #endif
 
