@@ -16,6 +16,8 @@
 // 毫秒计数器，在 Timer0 中断中递增
 volatile unsigned long g_tick_ms = 0;
 
+
+
 // -------------------- 定时器 & 延时 --------------------
 
 /**
@@ -55,6 +57,9 @@ void delay_ms(unsigned int ms)
     target = g_tick_ms + ms;
     while (g_tick_ms < target);
 }
+
+
+
 
 // -------------------- 演示函数 --------------------
 
@@ -102,6 +107,9 @@ static void demo_text(uint8_t page)
     OLED_Flush();
 }
 
+
+
+
 // -------------------- 主函数 --------------------
 
 void main()
@@ -117,6 +125,9 @@ void main()
     // 初始化 Timer0 (1ms tick)
     init_timer0();
 
+	  // 至少 68ms 延时防止烧录检测和 OLED IIC 冲突
+	  delay_ms(100); 
+	
     /*
      * 初始化 OLED
      * 内部配置 P02=SCL, P16=SDA (硬件 IIC)
