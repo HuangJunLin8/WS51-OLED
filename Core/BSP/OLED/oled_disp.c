@@ -91,9 +91,9 @@ void OLED_Init(void)
         oled_write_cmds(cmd, 2);
     }
 
-    // 水平寻址模式
+    // 页寻址模式
     {
-        const uint8_t cmd[] = {0x20, 0x00};
+        const uint8_t cmd[] = {0x20, 0x02};
         oled_write_cmds(cmd, 2);
     }
 

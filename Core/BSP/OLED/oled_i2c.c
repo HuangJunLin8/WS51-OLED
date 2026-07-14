@@ -18,8 +18,8 @@
 #define READ_IN    (P14F = 0xA2)
 #define READ_SDA   P14
 
-// 时钟调节 (与 SDK 一致, 1=~1us 延时)
-#define IIC_CLK_ADJ  1
+// 时钟调节 (SDK 默认 1, SSD1306 需 ≤400kHz, 增大以确保稳定)
+#define IIC_CLK_ADJ  5
 
 // -------------------- 软件延时 (与 SDK 一致) --------------------
 
