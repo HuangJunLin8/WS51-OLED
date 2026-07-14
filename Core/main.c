@@ -65,12 +65,13 @@ void main()
     HRCON |= 0x80;
 
     init_timer0();
-    delay_ms(100);          // 上电稳定
+    delay_ms(1000);          // 上电稳定
 
-    OLED_Init();            // 软件 I2C + SSD1306 初始化
+
 
     while (1)
     {
+		OLED_Init();            // 软件 I2C + SSD1306 初始化
         // 绘制全屏矩形框
         OLED_Clear();
         draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
