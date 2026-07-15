@@ -53,7 +53,8 @@ WS51F6240 驱动 0.69 寸 OLED (SSD1306, 96×16 像素)，当前使用**软件 I
 
 **OLED 电路**: 添加了复位电路，绘制 PCB 时要注意线序，小心画反。
 
-<img width="1442" height="1058" alt="image" src="https://github.com/user-attachments/assets/590a23dd-400a-47c2-b881-b91814ede496" />
+<img width="1634" height="1078" alt="image" src="https://github.com/user-attachments/assets/7c410a2f-c122-40ef-a51d-cfc03ed70242" />
+
 
 否则得像我这样搭棚+飞线大法
 
