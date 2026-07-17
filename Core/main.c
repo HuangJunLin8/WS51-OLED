@@ -74,8 +74,13 @@ void main()
 
     while (1)
     {
-        OLED_I2C_Send(0x78,0x40,data2,2);
+			
+        OLED_Init();
+			
+        delay_ms(1000);
+        
+			  OLED_I2C_Send(0x78,0x40,data2,2);
 
-        delay_ms(500);
+        delay_ms(2000);
     }
 }

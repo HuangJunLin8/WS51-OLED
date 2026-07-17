@@ -56,7 +56,7 @@ void OLED_Init(void)
     uint8_t i;
 
     // -------------------- 第1步: 初始化硬件 IIC --------------------
-    OLED_I2C_Init();
+    // OLED_I2C_Init();
 
     // -------------------- 第2步: SSD1306 初始化命令序列 --------------------
     // 参考: u8x8_d_ssd1306_96x16_er_init_seq (EastRising 0.69" OLED)
