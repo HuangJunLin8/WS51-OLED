@@ -184,13 +184,13 @@ void OLED_Flush(void)
         oled_write_cmd(0x00);
         // 设置列地址高半字节
         oled_write_cmd(0x10);
-
-			  delay_ms(500);
 			
         // 发送本页 96 字节数据
-        OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
+         OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
                       &g_oled_fb[page * OLED_WIDTH],
                       OLED_WIDTH);
+			
+			   // delay_ms(10); 
     }
 }
 
