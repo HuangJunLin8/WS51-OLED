@@ -10,6 +10,7 @@
 
 #include "WS51F6240.h"
 #include "oled_disp.h"
+#include "oled_i2c.h"
 
 // -------------------- 全局变量 --------------------
 
@@ -60,31 +61,21 @@ static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 
 void main()
 {
+	  uint8_t data2[2]={0xAA,0x55};
+	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
     HRCON |= 0x80;
 
     init_timer0();
     delay_ms(1000);          // 上电稳定
-
-
+	
+		OLED_I2C_Init();
 
     while (1)
     {
-				OLED_Init();            // 软件 I2C + SSD1306 初始化
-			
-        // 绘制全屏矩形框
-        OLED_Clear();
-        draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
-			
-				OLED_DrawString(10, 3, "WS51F6240");
-				
-        OLED_Flush();
-        delay_ms(500);
+        OLED_I2C_Send(0x78,0x40,data2,2);
 
-        // 清屏
-        OLED_Clear();
-        OLED_Flush();
         delay_ms(500);
     }
 }

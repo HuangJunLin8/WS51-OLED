@@ -14,22 +14,27 @@
 
 void OLED_I2C_Init(void)
 {
-    // P02 = SCL, P16 = SDA (IIC 复用功能, 与 SDK 一致)
+    // P02 = SCL, P16 = SDA (IIC 复用)
     P02F = 0xA5;
     P16F = 0xA5;
 
-    // I2C 时钟配置: SCL = Fi2c / (I2CFG1[6:0] + 8)
-    // Fi2c = 16MHz, I2CFG1 = 0xFF (127)
-    // SCL = 16,000,000 / (127 + 8) ≈ 119kHz
-    I2CCON  = 0x00;             // Fi2c_CLK = 16MHz (不分频)
-    I2CFG1  = 0xFF;             // 时钟分频器
+    // I2C 时钟分频选择：00 = 16MHz 内部时钟
+    I2CCON = 0x00;
 
-    I2CFLG  = 0x00;             // 清除所有标志
+    // SCL 频率 = Fi2c / (I2CFG1[6:0] + 8)
+    // 0xFF → 16MHz / (127+8) ≈ 119KHz
+    I2CFG1 = 0xFF;
 
-    I2CCON |= (0x1 << 7);       // bit7 I2CE: 使能 I2C 模块
-    I2CCON &= ~(0x1 << 6);      // bit6 I2CIE: 禁能 I2C 中断
-    I2CCON &= ~(0x1 << 5);      // bit5 STAIE: 禁能 START 中断
-    I2CCON &= ~(0x1 << 4);      // bit4 STPIE: 禁能 STOP 中断
+    // 清除所有标志
+    I2CFLG = 0x00;
+
+    // 使能 I2C 模块 (bit7 = I2CE)
+    I2CCON |= 0x80;
+
+    // 禁止所有 I2C 中断 — 使用轮询方式
+    I2CCON &= ~0x40;   // 禁能 I2C 中断 (I2CIE = 0)
+    I2CCON &= ~0x20;   // 禁能 START 中断
+    I2CCON &= ~0x10;   // 禁能 STOP 中断
 }
 
 // -------------------- 硬件 I2C 发送 (基于 SDK I2C_WriteByteNum) --------------------
@@ -51,57 +56,94 @@ uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
                       const uint8_t *buf, uint8_t len)
 {
     uint8_t cnt = 0;
-    uint8_t total_len = len + 1;    // ctrl_byte + data 总字节数
+    uint8_t total_len = len + 1;   // ctrl_byte + data
+    uint16_t timeout = 50000;
 
-    I2CFLG = 0;                     // 清除标志
-    I2CTXD = device_addr;           // 装载从机地址
-    I2CCON |= (0x1 << 3);           // 发送 START 信号
+    // 清标志
+    I2CFLG = 0;
+
+    // 地址
+    I2CTXD = device_addr;
+
+    // START
+    I2CCON |= (1 << 3);
 
     while (1)
     {
-        // START 信号已发出
-        if (IF_RXSTA == (I2CFLG & IF_RXSTA))
+
+        // 发送完成，收到 ACK
+        if (I2CFLG & IF_TXDAT)
         {
-            I2CFLG &= ~IF_RXSTA;
-        }
 
-        // 一字节发送完成并收到 ACK
-        if (IF_TXDAT == (I2CFLG & IF_TXDAT))
-        {
-            // 加载下一字节: 先发 ctrl_byte, 再发数据
-            if (cnt == 0)
-                I2CTXD = ctrl_byte;
-            else
-                I2CTXD = buf[cnt - 1];
-
-            cnt++;
-
-            // 全部字节已加载, 发送 STOP
-            if (cnt >= total_len)
+            // 检查 NACK
+            if (I2CFLG & RXNAK)
             {
-                I2CCON |= (0x1 << 2);   // STOP
-                I2CFLG &= ~IF_TXDAT;
+                I2CCON |= (1 << 2);   // STOP
+                I2CFLG = 0;
+                return 2;
+            }
+
+            /*
+             * 当前字节已经发送完成
+             * 决定是否发送下一个字节
+             */
+            if (cnt < total_len)
+            {
+
+                // 第一个数据是控制字节
+                if (cnt == 0){
+                    I2CTXD = ctrl_byte;
+                }
+                else{
+                    I2CTXD = buf[cnt - 1];
+                }
+
+                cnt++;
+
+                /*
+                 * 注意：
+                 * 最后一个 TXD 写入后，
+                 * 不要立即 STOP
+                 *
+                 * 等下一次 IF_TXDAT，
+                 * 表示最后一个字节真正发送完成，
+                 * 再 STOP
+                 */
+            }
+            else{
+                // 所有数据发送完成
+                // 此时发送 STOP
+                I2CCON |= (1 << 2);
+
+                timeout = 50000;
+                while (!(I2CFLG & BUSIDLE))
+                {
+                    if (--timeout == 0)
+                        break;
+                }
+
                 I2CFLG = 0;
                 return 0;
             }
 
+            // 清发送完成标志
             I2CFLG &= ~IF_TXDAT;
-
-            // 检查 NACK
-            if (RXNAK == (I2CFLG & RXNAK))
-            {
-                I2CCON |= (0x1 << 2);   // STOP
-                I2CFLG = 0;
-                return 2;
-            }
         }
 
         // 仲裁丢失
-        if (IF_LSTARB == (I2CFLG & IF_LSTARB))
+        if (I2CFLG & IF_LSTARB)
         {
             I2CFLG &= ~IF_LSTARB;
             I2CFLG = 0;
             return 1;
+        }
+
+        // 超时保护
+        if (--timeout == 0)
+        {
+            I2CCON |= (1 << 2);
+            I2CFLG = 0;
+            return 3;
         }
     }
 }
