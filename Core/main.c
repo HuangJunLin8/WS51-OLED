@@ -69,11 +69,11 @@ void main()
 
         delay_ms(2000);
 			
-			  OLED_Clear();
-			  OLED_Flush();
+			  // OLED_Clear();
+			  // OLED_Flush();
 			
 			  
-			  delay_ms(2000);
+			  // delay_ms(2000);
 			
     }
 }

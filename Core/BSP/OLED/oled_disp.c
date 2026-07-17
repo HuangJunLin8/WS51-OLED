@@ -28,7 +28,7 @@ static font_t g_font;
  */
 static void oled_write_cmd(uint8_t cmd)
 {
-    uint8_t buf;
+    int8_t buf;
     buf = cmd;
     OLED_I2C_Send(OLED_I2C_ADDR, 0x00, &buf, 1);
 }
@@ -36,7 +36,7 @@ static void oled_write_cmd(uint8_t cmd)
 /**
  * 发送多字节命令到 SSD1306
  */
-static void oled_write_cmds(const uint8_t *cmds, uint8_t len)
+static void oled_write_cmds(int8_t *cmds, uint8_t len)
 {
     OLED_I2C_Send(OLED_I2C_ADDR, 0x00, cmds, len);
 }
