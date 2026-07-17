@@ -37,113 +37,131 @@ void OLED_I2C_Init(void)
     I2CCON &= ~0x10;   // 禁能 STOP 中断
 }
 
-// -------------------- 硬件 I2C 发送 (基于 SDK I2C_WriteByteNum) --------------------
+// -------------------- 硬件 I2C 发送 --------------------
 
-/**
- * 发送 I2C 数据帧: [device_addr] + [ctrl_byte] + [data...]
+
+/*
+ * I2C 发送一次 START + 设备地址 + 数据块 + STOP
  *
- * 专为 SSD1306 设计:
- *   ctrl_byte = 0x00 → 命令
- *   ctrl_byte = 0x40 → 显示数据
+ * 时序（逻辑分析仪可观察）：
+ *   START → DevAddr(W) → ACK → Data[0] → ACK → ... → Data[N-1] → ACK → STOP
  *
- * @param device_addr  I2C 从机地址 (7-bit 左移1位)
- * @param ctrl_byte    SSD1306 控制字节
- * @param buf          数据缓冲区
- * @param len          数据长度 (字节数)
- * @return 0=成功, 1=仲裁丢失, 2=收到 NACK
+ * 返回 0 = 成功， 2 = NACK，3 = 超时
  */
-uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
-                      const uint8_t *buf, uint8_t len)
+unsigned char I2C_SendBurst(unsigned char dev_addr,
+                            unsigned char *buf,
+                            unsigned char len)
 {
-    uint8_t cnt = 0;
-    uint8_t total_len = len + 1;   // ctrl_byte + data
-    uint16_t timeout = 50000;
+    unsigned char cnt = 0;
+    unsigned int timeout = 50000;
 
-    // 清标志
+
     I2CFLG = 0;
 
-    // 地址
-    I2CTXD = device_addr;
+    // 发送地址
+    I2CTXD = dev_addr;
 
     // START
     I2CCON |= (1 << 3);
 
-    while (1)
-    {
 
-        // 发送完成，收到 ACK
-        if (I2CFLG & IF_TXDAT)
+    while(1)
+    {
+        if(I2CFLG & IF_TXDAT)
         {
 
-            // 检查 NACK
-            if (I2CFLG & RXNAK)
+            // 检查 ACK
+            if(I2CFLG & RXNAK)
             {
-                I2CCON |= (1 << 2);   // STOP
+                I2CCON |= (1<<2);
                 I2CFLG = 0;
                 return 2;
             }
 
-            /*
-             * 当前字节已经发送完成
-             * 决定是否发送下一个字节
-             */
-            if (cnt < total_len)
+            // 还有数据
+            if(cnt < len)
             {
-
-                // 第一个数据是控制字节
-                if (cnt == 0){
-                    I2CTXD = ctrl_byte;
-                }
-                else{
-                    I2CTXD = buf[cnt - 1];
-                }
-
-                cnt++;
-
-                /*
-                 * 注意：
-                 * 最后一个 TXD 写入后，
-                 * 不要立即 STOP
-                 *
-                 * 等下一次 IF_TXDAT，
-                 * 表示最后一个字节真正发送完成，
-                 * 再 STOP
-                 */
+                I2CTXD = buf[cnt++];
             }
-            else{
-                // 所有数据发送完成
-                // 此时发送 STOP
-                I2CCON |= (1 << 2);
 
-                timeout = 50000;
-                while (!(I2CFLG & BUSIDLE))
+            // 所有数据已经装载
+            if(cnt >= len)
+            {
+                // 注意顺序：
+                // STOP 必须在清 TXDAT 前
+                I2CCON |= (1<<2);
+
+                // 再清标志
+                I2CFLG &= ~IF_TXDAT;
+
+
+                timeout=50000;
+                while(!(I2CFLG & BUSIDLE))
                 {
-                    if (--timeout == 0)
+                    if(--timeout==0)
                         break;
                 }
 
-                I2CFLG = 0;
+                I2CFLG=0;
                 return 0;
             }
 
-            // 清发送完成标志
             I2CFLG &= ~IF_TXDAT;
         }
 
-        // 仲裁丢失
-        if (I2CFLG & IF_LSTARB)
+        if(I2CFLG & IF_LSTARB)
         {
             I2CFLG &= ~IF_LSTARB;
-            I2CFLG = 0;
             return 1;
         }
 
-        // 超时保护
-        if (--timeout == 0)
+        if(--timeout==0)
         {
-            I2CCON |= (1 << 2);
-            I2CFLG = 0;
+            I2CCON |= (1<<2);
+            I2CFLG=0;
             return 3;
         }
     }
+}
+
+
+
+/**
+ * @brief SSD1306 I2C发送
+ *
+ * 数据格式:
+ * START
+ * 地址
+ * 控制字节
+ * DATA...
+ * STOP
+ *
+ * ctrl:
+ * 0x00 命令
+ * 0x40 显存数据
+ */
+uint8_t OLED_I2C_Send(uint8_t device_addr,
+                      uint8_t ctrl_byte,
+                      const uint8_t *buf,
+                      uint8_t len)
+{
+    uint8_t tx_buf[32];     // 根据一次发送最大长度调整
+    uint8_t i;
+
+
+    // 第一个字节是SSD1306控制字节
+    tx_buf[0] = ctrl_byte;
+
+
+    // 后面跟实际数据
+    for(i = 0; i < len; i++)
+    {
+        tx_buf[i + 1] = buf[i];
+    }
+
+
+    // 直接使用已经验证成功的I2C发送函数
+    return I2C_SendBurst(device_addr,
+                         tx_buf,
+                         len + 1);
 }
