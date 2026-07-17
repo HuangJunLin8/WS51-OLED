@@ -12,6 +12,7 @@
 #define OLED_I2C_H
 
 #include "WS51F6240.h"
+#include "main.h"
 
 // SSD1306 I2C 从机地址 (7-bit: 0x3C, 左移1位 = 0x78)
 #define OLED_I2C_ADDR   0x78

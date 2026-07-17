@@ -43,6 +43,47 @@ void delay_ms(unsigned int ms)
 }
 
 
+// us 延时(1~49000us)
+void delay_us(unsigned int us)
+{
+    unsigned char  th, tl;
+    unsigned int   start, now, elapsed;
+    unsigned int   ticks;
+
+    if (us == 0) return;
+
+    // 目标 tick 数: us * 4 / 3 (每 tick = 0.75us)
+    ticks = us + us / 3;
+
+    // 关闭 Timer0 中断，防止 ISR 在测量期间重置计数值
+    ET0 = 0;
+
+    do {
+        th = TH0;
+        tl = TL0;
+    } while (th != TH0);
+    start = (th << 8) | tl;
+
+    // 轮询计数值直到达到目标 tick 数
+    do {
+        do {
+            th = TH0;
+            tl = TL0;
+        } while (th != TH0);
+        now = (th << 8) | tl;
+
+        // 处理 16-bit 计数器溢出
+        if (now >= start)
+            elapsed = now - start;
+        else
+            elapsed = (65536 - start) + now;
+    } while (elapsed < ticks);
+
+    // 恢复 Timer0 中断
+    ET0 = 1;
+}
+
+
 // -------------------- 绘制矩形框 --------------------
 
 static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
