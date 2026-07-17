@@ -140,13 +140,13 @@ unsigned char I2C_SendBurst(unsigned char dev_addr,
  * 0x00 命令
  * 0x40 显存数据
  */
-uint8_t OLED_I2C_Send(uint8_t device_addr,
-                      uint8_t ctrl_byte,
-                      const uint8_t *buf,
-                      uint8_t len)
+unsigned char OLED_I2C_Send(unsigned char device_addr,
+                      unsigned char ctrl_byte,
+                      const unsigned char *buf,
+                      unsigned char len)
 {
-    uint8_t tx_buf[32];     // 根据一次发送最大长度调整
-    uint8_t i;
+    data unsigned char tx_buf[32];     // 根据一次发送最大长度调整
+    data unsigned char i;
 
 
     // 第一个字节是SSD1306控制字节

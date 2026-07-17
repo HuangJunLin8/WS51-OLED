@@ -410,18 +410,6 @@
         </Group>
         <Group>
           <GroupName>Font</GroupName>
-          <Files>
-            <File>
-              <FileName>font.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>Libs\Font\font.c</FilePath>
-            </File>
-            <File>
-              <FileName>font_data.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>Libs\Font\font_data.c</FilePath>
-            </File>
-          </Files>
         </Group>
       </Groups>
     </Target>

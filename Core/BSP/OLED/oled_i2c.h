@@ -30,7 +30,10 @@
 // -------------------- 函数声明 --------------------
 
 void    OLED_I2C_Init(void);
+
 uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
                       const uint8_t *buf, uint8_t len);
+											
+unsigned char I2C_SendBurst(unsigned char dev_addr, unsigned char *buf, unsigned char len);
 
 #endif // OLED_I2C_H

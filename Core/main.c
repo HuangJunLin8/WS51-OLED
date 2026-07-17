@@ -9,7 +9,7 @@
  */
 
 #include "WS51F6240.h"
-#include "oled_disp.h"
+// #include "oled_disp.h"
 #include "oled_i2c.h"
 
 // -------------------- 全局变量 --------------------
@@ -41,27 +41,13 @@ void delay_ms(unsigned int ms)
     while (g_tick_ms < target);
 }
 
-// -------------------- 绘制矩形框 --------------------
 
-static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
-{
-    uint8_t i;
-
-    // 上边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y1, 1);
-    // 下边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y2, 1);
-    // 左边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x1, i, 1);
-    // 右边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x2, i, 1);
-}
 
 // -------------------- 主函数 --------------------
 
 void main()
 {
-	  uint8_t data2[2]={0xAA,0x55};
+	  data unsigned char data2[8]={0x00,0xAA,0x00,0xAA,0x00,0xAA,0x00,0xAA};
 	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
@@ -75,12 +61,17 @@ void main()
     while (1)
     {
 			
-        OLED_Init();
+        // OLED_Init();
 			
         delay_ms(1000);
         
-			  OLED_I2C_Send(0x78,0x40,data2,2);
+			  OLED_I2C_Send(0x78,0x40,data2,8);
 
         delay_ms(2000);
+			
+			  I2C_SendBurst(0x78, data2, 8);
+			
+			  delay_ms(2000);
+			
     }
 }
