@@ -58,91 +58,95 @@ void OLED_Init(void)
     // -------------------- 第1步: 初始化硬件 IIC --------------------
     // OLED_I2C_Init();
 
+
     // -------------------- 第2步: SSD1306 初始化命令序列 --------------------
-    // 参考: u8x8_d_ssd1306_96x16_er_init_seq (EastRising 0.69" OLED)
+    // 参考: u8x8_d_ssd1306_96x16_er_init_seq
+    // EastRising 0.69" OLED
+
 
     // 显示关闭
     oled_write_cmd(0xAE);
 
-    // 时钟分频 + 振荡频率
-    {
-        const uint8_t cmd[] = {0xD5, 0x80};
-        oled_write_cmds(cmd, 2);
-    }
 
-    // 多路复用比 = 15 (16 行)
-    {
-        const uint8_t cmd[] = {0xA8, 0x0F};
-        oled_write_cmds(cmd, 2);
-    }
+    // 时钟分频 + 振荡频率
+    oled_write_cmd(0xD5);
+    oled_write_cmd(0x80);
+
+
+    // 多路复用比 = 15 (16行)
+    oled_write_cmd(0xA8);
+    oled_write_cmd(0x0F);
+
 
     // 显示偏移 = 0
-    {
-        const uint8_t cmd[] = {0xD3, 0x00};
-        oled_write_cmds(cmd, 2);
-    }
+    oled_write_cmd(0xD3);
+    oled_write_cmd(0x00);
+
 
     // 显示起始行 = 0
     oled_write_cmd(0x40);
 
+
     // 电荷泵使能
-    {
-        const uint8_t cmd[] = {0x8D, 0x14};
-        oled_write_cmds(cmd, 2);
-    }
+    oled_write_cmd(0x8D);
+    oled_write_cmd(0x14);
+
 
     // 页寻址模式
-    {
-        const uint8_t cmd[] = {0x20, 0x02};
-        oled_write_cmds(cmd, 2);
-    }
+    oled_write_cmd(0x20);
+    oled_write_cmd(0x02);
+
 
     // 段重映射 (左右翻转)
     oled_write_cmd(0xA1);
 
-    // COM 扫描方向 (上下翻转)
+
+    // COM扫描方向 (上下翻转)
     oled_write_cmd(0xC8);
 
-    // COM 引脚配置
-    {
-        const uint8_t cmd[] = {0xDA, 0x02};
-        oled_write_cmds(cmd, 2);
-    }
+
+    // COM引脚配置
+    oled_write_cmd(0xDA);
+    oled_write_cmd(0x02);
+
 
     // 对比度
-    {
-        const uint8_t cmd[] = {0x81, 0xAF};
-        oled_write_cmds(cmd, 2);
-    }
+    oled_write_cmd(0x81);
+    oled_write_cmd(0xAF);
+
 
     // 预充电周期
-    {
-        const uint8_t cmd[] = {0xD9, 0xF1};
-        oled_write_cmds(cmd, 2);
-    }
+    oled_write_cmd(0xD9);
+    oled_write_cmd(0xF1);
 
-    // VCOMH 取消选择电平
-    {
-        const uint8_t cmd[] = {0xDB, 0x20};
-        oled_write_cmds(cmd, 2);
-    }
+
+    // VCOMH取消选择电平
+    oled_write_cmd(0xDB);
+    oled_write_cmd(0x20);
+
 
     // 停用滚动
     oled_write_cmd(0x2E);
 
+
     // 显示跟随 RAM 内容
     oled_write_cmd(0xA4);
+
 
     // 正常显示 (非反转)
     oled_write_cmd(0xA6);
 
+
     // 显示开启
     oled_write_cmd(0xAF);
 
+
     // -------------------- 第3步: 初始化帧缓冲区和字体 --------------------
-    for (i = 0; i < sizeof(g_oled_fb); i++) {
+    for(i = 0; i < sizeof(g_oled_fb); i++)
+    {
         g_oled_fb[i] = 0x00;
     }
+
 
     Font_Init(&g_font);
     Font_SetType(&g_font, FONT_Terminus_14);

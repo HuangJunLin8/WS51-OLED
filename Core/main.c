@@ -9,7 +9,7 @@
  */
 
 #include "WS51F6240.h"
-// #include "oled_disp.h"
+#include "oled_disp.h"
 #include "oled_i2c.h"
 
 // -------------------- 全局变量 --------------------
@@ -47,24 +47,24 @@ void delay_ms(unsigned int ms)
 
 void main()
 {
-	  data unsigned char data2[8]={0x00,0xAA,0x00,0xAA,0x00,0xAA,0x00,0xAA};
+	  unsigned char data2[8]={0x00,0xAA,0x00,0xAA,0x00,0xAA,0x00,0xAA};
 	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
     HRCON |= 0x80;
 
     init_timer0();
-    delay_ms(1000);          // 上电稳定
+    delay_ms(200);          // 上电稳定
 	
 		OLED_I2C_Init();
+		delay_ms(100);          // 无此延时，时序会乱
+		
 
     while (1)
     {
 			
-        // OLED_Init();
+				OLED_Init();
 			
-        delay_ms(1000);
-        
 			  OLED_I2C_Send(0x78,0x40,data2,8);
 
         delay_ms(2000);
