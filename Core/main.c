@@ -11,6 +11,7 @@
 #include "WS51F6240.h"
 #include "oled_disp.h"
 #include "oled_i2c.h"
+#include "main.h"
 
 // -------------------- 全局变量 --------------------
 
@@ -43,6 +44,7 @@ void delay_ms(unsigned int ms)
 
 
 
+
 // -------------------- 主函数 --------------------
 
 void main()
@@ -64,13 +66,13 @@ void main()
     {
 			
 				OLED_Init();
-			
-			  OLED_I2C_Send(0x78,0x40,data2,8);
 
         delay_ms(2000);
 			
-			  I2C_SendBurst(0x78, data2, 8);
+			  OLED_Clear();
+			  OLED_Flush();
 			
+			  
 			  delay_ms(2000);
 			
     }

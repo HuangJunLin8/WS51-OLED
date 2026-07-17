@@ -185,6 +185,8 @@ void OLED_Flush(void)
         // 设置列地址高半字节
         oled_write_cmd(0x10);
 
+			  delay_ms(500);
+			
         // 发送本页 96 字节数据
         OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
                       &g_oled_fb[page * OLED_WIDTH],
