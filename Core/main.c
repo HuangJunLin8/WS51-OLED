@@ -146,9 +146,13 @@ void main()
 
         // delay_ms(2000);
 			
-			  OLED_Clear();
+			  // OLED_Clear();
 			
-			  //OLED_SetPixel(10,10,1);
+			  g_oled_fb[16] = 0xFF;
+			
+			  g_oled_fb[20] = 0x32;
+			
+			  g_oled_fb[25] = 0x01;
 			  //OLED_SetPixel(0,0,1);
 			
         // OLED_DrawString(10, 3, "WS51F6240");
