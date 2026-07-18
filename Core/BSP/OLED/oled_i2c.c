@@ -155,3 +155,95 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
         }
     }
 }
+
+
+
+
+/*==========================================================================
+ * I2C 发送一次 START + 设备地址 + 数据块 + STOP
+ *
+ * 时序（逻辑分析仪可观察）：
+ *   START → DevAddr(W) → ACK → Data[0] → ACK → ... → Data[N-1] → ACK → STOP
+ *
+ * 返回 0 = 成功， 2 = NACK，3 = 超时
+ *==========================================================================*/
+unsigned char I2C_SendBurst(unsigned char dev_addr,
+                            unsigned char *buf,
+                            unsigned char len)
+{
+    unsigned char cnt = 0;
+    unsigned int timeout = 50000;
+
+
+    I2CFLG = 0;
+
+    // 发送地址
+    I2CTXD = dev_addr;
+
+    // START
+    I2CCON |= (1 << 3);
+
+
+    while(1)
+    {
+        if(I2CFLG & IF_TXDAT)
+        {
+
+            // 检查 ACK
+            if(I2CFLG & RXNAK)
+            {
+                I2CCON |= (1<<2);
+                I2CFLG = 0;
+                return 2;
+            }
+
+
+            // 还有数据
+            if(cnt < len)
+            {
+                I2CTXD = buf[cnt++];
+            }
+
+
+            // 所有数据已经装载
+            if(cnt >= len)
+            {
+                // 注意顺序：
+                // STOP 必须在清 TXDAT 前
+                I2CCON |= (1<<2);
+
+                // 再清标志
+                I2CFLG &= ~IF_TXDAT;
+
+
+                timeout=50000;
+                while(!(I2CFLG & BUSIDLE))
+                {
+                    if(--timeout==0)
+                        break;
+                }
+
+                I2CFLG=0;
+                return 0;
+            }
+
+
+            I2CFLG &= ~IF_TXDAT;
+        }
+
+
+        if(I2CFLG & IF_LSTARB)
+        {
+            I2CFLG &= ~IF_LSTARB;
+            return 1;
+        }
+
+
+        if(--timeout==0)
+        {
+            I2CCON |= (1<<2);
+            I2CFLG=0;
+            return 3;
+        }
+    }
+}

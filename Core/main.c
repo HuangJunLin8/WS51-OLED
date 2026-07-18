@@ -105,7 +105,39 @@ static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 
 void main()
 {
-	  unsigned char data2[8]={0x00,0xAA,0x00,0xAA,0x00,0xAA,0x00,0xAA};
+	  unsigned char tx_buf[32];
+	  tx_buf[0] = 0x00;
+    tx_buf[1] = 0xAA;
+    tx_buf[2] = 0x00;
+    tx_buf[3] = 0xAA;		
+    tx_buf[4] = 0x00;
+    tx_buf[5] = 0xAA;		
+    tx_buf[6] = 0x00;
+    tx_buf[7] = 0xAA;
+		tx_buf[8] = 0x00;
+    tx_buf[9] = 0xAA;
+		tx_buf[10] = 0x00;
+    tx_buf[11] = 0xAA;
+		tx_buf[12] = 0x00;
+    tx_buf[13] = 0xAA;
+		tx_buf[14] = 0x00;
+    tx_buf[15] = 0xAA;
+		tx_buf[16] = 0x00;
+    tx_buf[17] = 0xAA;
+    tx_buf[18] = 0x00;
+    tx_buf[19] = 0xAA;
+    tx_buf[20] = 0x00;
+    tx_buf[21] = 0xAA;		
+    tx_buf[22] = 0x00;
+    tx_buf[23] = 0xAA;		
+    tx_buf[24] = 0x00;
+    tx_buf[25] = 0xAA;
+		tx_buf[26] = 0x00;
+    tx_buf[27] = 0xAA;
+		tx_buf[28] = 0x00;
+    tx_buf[29] = 0xAA;
+		tx_buf[30] = 0x00;
+    tx_buf[31] = 0xAA;
 	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
@@ -127,14 +159,17 @@ void main()
 			
 			  OLED_Clear();
 			
-        draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
+        // draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
 			
-        OLED_DrawString(10, 3, "WS51F6240");
+        // OLED_DrawString(10, 3, "WS51F6240");
 			
 			  OLED_Flush();
 			
-			  
-			  delay_ms(2000);
+			  delay_ms(5000);  
+			
+			  I2C_SendBurst(0x78, tx_buf, 32);  
+			
+			  delay_ms(10000);
 			
     }
 }

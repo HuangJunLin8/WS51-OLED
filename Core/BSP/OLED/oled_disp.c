@@ -175,7 +175,7 @@ void OLED_Flush(void)
     uint8_t page;
     // col not needed in page mode
 
-    for (page = 0; page < OLED_PAGES; page++) {
+    for (page = 0; page < OLED_PAGES - 1; page++) {
 
         // 设置页地址
         // oled_write_cmd((uint8_t)(0xB0 | page));
@@ -189,6 +189,10 @@ void OLED_Flush(void)
          OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
                       &g_oled_fb[page * OLED_WIDTH],
                       32);
+			   
+			   delay_ms(3000);
+			
+			   I2C_SendBurst(0x78, &g_oled_fb[page * OLED_WIDTH], 32);
 			
 			   // delay_ms(10); 
     }
