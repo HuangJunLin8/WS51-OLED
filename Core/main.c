@@ -121,9 +121,9 @@ void main()
     while (1)
     {
 			
-				OLED_Init();
+				// OLED_Init();
 
-        delay_ms(2000);
+        // delay_ms(2000);
 			
 			  OLED_Clear();
 			

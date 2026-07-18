@@ -16,7 +16,7 @@
 // -------------------- 帧缓冲区 --------------------
 
 // 192 字节帧缓冲区, 放在 XDATA
-uint8_t xdata g_oled_fb[OLED_WIDTH * OLED_PAGES];
+uint8_t g_oled_fb[OLED_WIDTH * OLED_PAGES];
 
 // 当前字体
 static font_t g_font;
@@ -178,17 +178,17 @@ void OLED_Flush(void)
     for (page = 0; page < OLED_PAGES; page++) {
 
         // 设置页地址
-        oled_write_cmd((uint8_t)(0xB0 | page));
+        // oled_write_cmd((uint8_t)(0xB0 | page));
 
         // 设置列地址低半字节
-        oled_write_cmd(0x00);
+        // oled_write_cmd(0x00);
         // 设置列地址高半字节
-        oled_write_cmd(0x10);
+        // oled_write_cmd(0x10);
 			
         // 发送本页 96 字节数据
          OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
                       &g_oled_fb[page * OLED_WIDTH],
-                      OLED_WIDTH);
+                      32);
 			
 			   // delay_ms(10); 
     }
