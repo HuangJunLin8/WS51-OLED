@@ -99,7 +99,7 @@ void draw_rect(void)
 void main()
 {
 	
-	  uint8_t g_oled_fb[32];
+	  unsigned char g_oled_fb[32];
 	  unsigned char tx_buf[32];
 	  tx_buf[0] = 0x00;
     tx_buf[1] = 0xAA;
@@ -110,7 +110,7 @@ void main()
     tx_buf[6] = 0x00;
     tx_buf[7] = 0xAA;
 		tx_buf[8] = 0x00;
-    tx_buf[9] = 0xAA;
+    tx_buf[9] = 0x01;
 		tx_buf[10] = 0x00;
     tx_buf[11] = 0xAA;
 		tx_buf[12] = 0x00;
@@ -132,11 +132,9 @@ void main()
 		tx_buf[28] = 0x00;
     tx_buf[29] = 0xAA;
 		tx_buf[30] = 0x00;
-    tx_buf[31] = 0xAA;
+    tx_buf[31] = 0x01;
 	
-	  g_oled_fb[16] = 0x32;
-		g_oled_fb[20] = 0xAA;
-		g_oled_fb[25] = 0x01;
+
 	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
@@ -156,7 +154,14 @@ void main()
 
         // delay_ms(2000);
 			
-			  // OLED_Clear();
+			  uint8_t i;
+				for (i = 0; i < sizeof(g_oled_fb); i++) {
+						g_oled_fb[i] = 0x00;
+				}
+				
+			  g_oled_fb[16] = 0x32;
+		    g_oled_fb[20] = 0xAA;
+		    g_oled_fb[25] = 0x01;
 			
 
 			  //OLED_SetPixel(0,0,1);
@@ -166,15 +171,14 @@ void main()
              &g_oled_fb[0],
               32);
 			   
-			  delay_ms(3000);
+			  delay_ms(1000);
 			
 			  I2C_SendBurst(0x78, &g_oled_fb[0], 32);
 			
-			  delay_ms(4000);  
+			  delay_ms(1000);  
 			
 			  I2C_SendBurst(0x78, tx_buf, 32);  
 			
-			  delay_ms(7000);
-			
+			  delay_ms(3000);
     }
 }
