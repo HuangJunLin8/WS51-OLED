@@ -105,7 +105,12 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
             }
             else if(cnt <= len)
             {
-                I2CTXD = buf[cnt - 1];
+                unsigned char temp;
+
+                temp = buf[cnt-1];
+
+                I2CTXD = temp;
+							
                 cnt++;
             }
 

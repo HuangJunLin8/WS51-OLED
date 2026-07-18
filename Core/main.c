@@ -92,8 +92,14 @@ void draw_rect(void)
 }
 // -------------------- 主函数 --------------------
 
+
+
+
+
 void main()
 {
+	
+	  uint8_t g_oled_fb[32];
 	  unsigned char tx_buf[32];
 	  tx_buf[0] = 0x00;
     tx_buf[1] = 0xAA;
@@ -128,6 +134,10 @@ void main()
 		tx_buf[30] = 0x00;
     tx_buf[31] = 0xAA;
 	
+	  g_oled_fb[16] = 0x32;
+		g_oled_fb[20] = 0xAA;
+		g_oled_fb[25] = 0x01;
+	
     // 系统时钟: HRC 16MHz
     SCCON  = 0x00;
     HRCON |= 0x80;
@@ -148,16 +158,17 @@ void main()
 			
 			  // OLED_Clear();
 			
-			  g_oled_fb[16] = 0xFF;
-			
-			  g_oled_fb[20] = 0x32;
-			
-			  g_oled_fb[25] = 0x01;
+
 			  //OLED_SetPixel(0,0,1);
 			
         // OLED_DrawString(10, 3, "WS51F6240");
+			  OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
+             &g_oled_fb[0],
+              32);
+			   
+			  delay_ms(3000);
 			
-			  OLED_Flush();
+			  I2C_SendBurst(0x78, &g_oled_fb[0], 32);
 			
 			  delay_ms(4000);  
 			

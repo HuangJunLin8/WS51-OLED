@@ -30,6 +30,6 @@ void OLED_DrawString(uint8_t x, uint8_t y, const char *str);
 void OLED_DrawString_F(uint8_t x, uint8_t y, const char *str, font_t *f);
 
 // 暴露帧缓冲区指针 (供 font.c 回调使用)
-extern uint8_t xdata g_oled_fb[192];
+
 
 #endif // OLED_DISP_H
