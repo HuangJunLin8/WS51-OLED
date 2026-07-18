@@ -86,21 +86,10 @@ void delay_us(unsigned int us)
 
 // -------------------- 绘制矩形框 --------------------
 
-static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
+void draw_rect(void)
 {
-    uint8_t i;
-
-    // 上边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y1, 1);
-    // 下边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y2, 1);
-    // 左边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x1, i, 1);
-    // 右边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x2, i, 1);
+    OLED_SetPixel(0,0,1);
 }
-
-
 // -------------------- 主函数 --------------------
 
 void main()
@@ -159,17 +148,18 @@ void main()
 			
 			  OLED_Clear();
 			
-        // draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
+			  //OLED_SetPixel(10,10,1);
+			  //OLED_SetPixel(0,0,1);
 			
         // OLED_DrawString(10, 3, "WS51F6240");
 			
 			  OLED_Flush();
 			
-			  delay_ms(5000);  
+			  delay_ms(4000);  
 			
 			  I2C_SendBurst(0x78, tx_buf, 32);  
 			
-			  delay_ms(10000);
+			  delay_ms(7000);
 			
     }
 }
