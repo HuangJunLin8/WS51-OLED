@@ -18,8 +18,17 @@ void OLED_I2C_Init(void)
     P02F = 0xA5;
     P16F = 0xA5;
 
-    // I2C 时钟分频选择：00 = 16MHz 内部时钟
-    I2CCON = 0x00;
+    // I2C 时钟分频选择：
+	  // 00 = 16MHz
+	  // 01 = 16Mhz / 2 = 8Mhz
+	  // 02 = 16Mhz / 3 = 5.33Mhz
+	  // 03 = 16Mhz / 4 = 4Mhz
+	
+	  // 实测：
+	  // 16Mhz SCL 低电平间隔 1~2us (逻辑分析仪 20Mhz 分析有时不准)
+	  // 4Mhz  SCL 低电平间隔 10us  (逻辑分析仪 20Mhz 分析准确)
+	
+    I2CCON = 0x03;
 
     // SCL 频率 = Fi2c / (I2CFG1[6:0] + 8)
     // 0xFF → 16MHz / (127+8) ≈ 119KHz
@@ -85,48 +94,47 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
         if(I2CFLG & IF_TXDAT)
         {
 
-            // ACK检查
-            if(I2CFLG & RXNAK)
-            {
-                I2CCON |= (1<<2);
-                I2CFLG = 0;
-                return 2;
-            }
+            // 检查 ACK
+            // if(I2CFLG & RXNAK)
+            // {
+            //    I2CCON |= (1<<2);
+            //    I2CFLG = 0;
+            //    return 2;
+            // }
 
 
-            /*
-             * 第一次发送控制字节
-             * 后续发送buf[]
-             */
+            // 发送控制字节
             if(cnt == 0)
             {
+							
+                // 先清 TXDAT 标志
+                I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
                 I2CTXD = ctrl_byte;
                 cnt++;
             }
+						
+						// 发送数据
             else if(cnt <= len)
             {
-                unsigned char temp;
-
-                temp = buf[cnt-1];
-
-                I2CTXD = temp;
 							
-                cnt++;
+                // 先清 TXDAT 标志
+                I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
+                I2CTXD = buf[cnt++];
             }
 
 
-            /*
-             * 所有数据装载完成
-             */
+						// 所有数据装载完成
             if(cnt > len)
             {
-                // STOP
+                // 先发 STOP
                 I2CCON |= (1<<2);
 
-
-                // 清标志
-                I2CFLG &= ~IF_TXDAT;
-
+                // 再清全部标志
+                I2CFLG = 0;
 
                 timeout = 50000;
                 while(!(I2CFLG & BUSIDLE))
@@ -135,13 +143,9 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
                         break;
                 }
 
-
-                I2CFLG = 0;
                 return 0;
             }
 
-
-            I2CFLG &= ~IF_TXDAT;
         }
 
 
@@ -179,33 +183,38 @@ unsigned char I2C_SendBurst(unsigned char dev_addr,
     unsigned char cnt = 0;
     unsigned int timeout = 50000;
 
-
+    // 清全部标志
     I2CFLG = 0;
 
-    // 发送地址
+    // 压入地址
     I2CTXD = dev_addr;
 
-    // START
+    // 启动发送
     I2CCON |= (1 << 3);
 
-
+    // 循环发送数据
     while(1)
     {
         if(I2CFLG & IF_TXDAT)
         {
 
             // 检查 ACK
-            if(I2CFLG & RXNAK)
-            {
-                I2CCON |= (1<<2);
-                I2CFLG = 0;
-                return 2;
-            }
-
+            // if(I2CFLG & RXNAK)
+            // {
+            //    I2CCON |= (1<<2);
+            //    I2CFLG = 0;
+            //    return 2;
+            // }
+						
 
             // 还有数据
             if(cnt < len)
             {
+							
+                // 先清 TXDAT 标志
+                I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
                 I2CTXD = buf[cnt++];
             }
 
@@ -217,9 +226,8 @@ unsigned char I2C_SendBurst(unsigned char dev_addr,
                 // STOP 必须在清 TXDAT 前
                 I2CCON |= (1<<2);
 
-                // 再清标志
-                I2CFLG &= ~IF_TXDAT;
-
+                // 再清全部标志
+                I2CFLG=0;
 
                 timeout=50000;
                 while(!(I2CFLG & BUSIDLE))
@@ -228,12 +236,8 @@ unsigned char I2C_SendBurst(unsigned char dev_addr,
                         break;
                 }
 
-                I2CFLG=0;
                 return 0;
             }
-
-
-            I2CFLG &= ~IF_TXDAT;
         }
 
 

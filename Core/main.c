@@ -167,9 +167,8 @@ void main()
 			  //OLED_SetPixel(0,0,1);
 			
         // OLED_DrawString(10, 3, "WS51F6240");
-			  OLED_I2C_Send(OLED_I2C_ADDR, 0x40,
-             &g_oled_fb[0],
-              32);
+			  
+				OLED_I2C_Send(OLED_I2C_ADDR, 0x40, &g_oled_fb[0],32);
 			   
 			  delay_ms(1000);
 			
