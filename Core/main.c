@@ -67,22 +67,72 @@ void main()
     init_timer0();
     delay_ms(1000);          // 上电稳定
 
-
-
+    OLED_I2C_Init();
+    delay_ms(100);          // 待 I2C 初始化
+  
+    OLED_Init();
+    
     while (1)
     {
-		OLED_Init();            // 软件 I2C + SSD1306 初始化
-        // 绘制全屏矩形框
+        // 测试单像素
         OLED_Clear();
-        draw_rect(0, 0, OLED_WIDTH - 1, OLED_HEIGHT - 1);
-			
-				OLED_DrawString(10, 3, "WS51F6240");
-				
+        OLED_SetPixel(48,8,1);
         OLED_Flush();
         delay_ms(500);
 
-        // 清屏
+
+        // 测试水平线
         OLED_Clear();
+        OLED_DrawHLine(24,5,50,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试垂直线
+        OLED_Clear();
+        OLED_DrawVLine(48,2,12,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试斜线
+        OLED_Clear();
+        OLED_DrawLine(0,0,95,15,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试填充矩形
+        OLED_Clear();
+        OLED_FillRect(20,3,30,10,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试矩形框
+        OLED_Clear();
+        OLED_DrawFrame(10,2,50,12,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试圆角矩形
+        OLED_Clear();
+        OLED_DrawRoundedBox(20,2,50,12,3,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试圆角矩形框
+        OLED_Clear();
+        OLED_DrawRoundedFrame(20,2,50,12,3,1);
+        OLED_Flush();
+        delay_ms(500);
+
+
+        // 测试ASCII字符串
+        OLED_Clear();
+        OLED_DrawASCII(5,1,"WS51F6240");
         OLED_Flush();
         delay_ms(500);
     }

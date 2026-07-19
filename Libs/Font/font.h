@@ -36,6 +36,7 @@
 
 #include "stdint.h"
 
+
 // -------------------- 字体解码结构体 --------------------
 
 typedef struct {
@@ -48,6 +49,7 @@ typedef struct {
     int8_t   glyph_height;
     uint8_t  decode_bit_pos;
 } font_decode_t;
+
 
 // 字体信息 (从字体数据头部解析)
 typedef struct {
@@ -73,6 +75,7 @@ typedef struct {
     uint16_t start_pos_unicode;
 } font_info_t;
 
+
 // 字体主结构体
 typedef struct {
     const uint8_t *font_type; // 指向字体数据
@@ -80,16 +83,30 @@ typedef struct {
     font_info_t    font_info;
 } font_t;
 
+
+// 字体数据
+extern const uint8_t code FONT_Terminus_14[];
+
+
 // -------------------- 函数声明 --------------------
 
+// 初始化字体对象
 void Font_Init(font_t *f);
+
+// 设置字体
 void Font_SetType(font_t *f, const uint8_t *font_buf);
-uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str);
+
+// 获取字体宽度
 uint8_t Font_GetStrWidth(font_t *f, const char *str);
+
+// 获取字体高度
 uint8_t Font_GetHeight(font_t *f);
 
-// -------------------- 字体数据声明 --------------------
+// 绘制英文文字
+uint16_t Font_DrawStrASCII(font_t *f, uint8_t x, uint8_t y, const char *str);
 
-extern const uint8_t code FONT_Terminus_14[];
+// 绘制中文字体
+uint16_t Font_DrawStrUTF8(font_t *f,uint8_t x,uint8_t y,const char *str);
+
 
 #endif // FONT_H

@@ -1,25 +1,18 @@
 /**
  * font.c — u8g2 字体解码器实现 (单色, C51 适配)
- *
- * 从 LCD_0-96 参考项目移植，主要改动:
- *   - 移除函数指针回调 → 直接调用 OLED_DrawHLine() (避免 C51 C212 错误)
- *   - 移除 16-bit RGB565 颜色 → 单色 0/1
- *   - 移除 UTF-8 支持，仅 ASCII
- *   - 移除 <string.h> 依赖 (8051 节省空间)
- *   - 所有变量声明在函数开头 (C89 兼容)
- *   - data → buf (避开 C51 data 关键字)
  */
 
 #include "font.h"
 #include "oled_disp.h"
 
-// -------------------- 内部辅助函数 --------------------
+// ---------------------------------------- 字体数据解析 ----------------------------------------
 
 // 读取一个字节
 static uint8_t font_read_byte(const uint8_t *p)
 {
     return *p;
 }
+
 
 // 读取一个字 (大端序)
 static uint16_t font_read_word(const uint8_t *p)
@@ -30,6 +23,7 @@ static uint16_t font_read_word(const uint8_t *p)
     v += *p;
     return v;
 }
+
 
 // 解析字体信息头部 (23 字节)
 static void font_read_info(font_info_t *info, const uint8_t *buf)
@@ -56,6 +50,7 @@ static void font_read_info(font_info_t *info, const uint8_t *buf)
     info->start_pos_unicode  = font_read_word(buf + 21);
 }
 
+
 // 从位流中读取无符号整数
 static uint8_t font_decode_get_unsigned_bits(font_decode_t *f, uint8_t cnt)
 {
@@ -78,6 +73,7 @@ static uint8_t font_decode_get_unsigned_bits(font_decode_t *f, uint8_t cnt)
     return val;
 }
 
+
 // 从位流中读取有符号整数
 static int8_t font_decode_get_signed_bits(font_decode_t *f, uint8_t cnt)
 {
@@ -86,6 +82,7 @@ static int8_t font_decode_get_signed_bits(font_decode_t *f, uint8_t cnt)
     v -= (1 << (cnt - 1));
     return v;
 }
+
 
 // 准备解码一个字形
 static void font_setup_decode(font_t *f, const uint8_t *glyph_buf)
@@ -97,6 +94,7 @@ static void font_setup_decode(font_t *f, const uint8_t *glyph_buf)
     f->font_decode.glyph_height    = (int8_t)font_decode_get_unsigned_bits(
         &f->font_decode, f->font_info.bits_per_char_height);
 }
+
 
 /**
  * 绘制一段 RLE 编码像素行
@@ -131,6 +129,7 @@ static void font_decode_len(font_t *f, uint8_t len, uint8_t is_foreground)
     }
     decode->x = (int8_t)((uint8_t)decode->x + cnt);
 }
+
 
 // 解码一个完整的字形
 static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_buf)
@@ -170,6 +169,7 @@ static int8_t font_decode_glyph(font_t *f, const uint8_t *glyph_buf)
     }
     return d;
 }
+
 
 /**
  * 查找指定字符的字形数据
@@ -213,10 +213,12 @@ static const uint8_t *font_get_glyph_data(font_t *f, uint16_t encoding)
     return (const uint8_t *)0;
 }
 
-// -------------------- 公开 API --------------------
+// ---------------------------------------- 字体绘制 ----------------------------------------
 
 /**
  * 初始化字体对象
+ *
+ * @param f 字体对象指针
  */
 void Font_Init(font_t *f)
 {
@@ -229,8 +231,12 @@ void Font_Init(font_t *f)
     }
 }
 
+
 /**
  * 设置字体类型
+ *
+ * @param f        字体对象指针
+ * @param font_buf 字体数据缓冲区
  */
 void Font_SetType(font_t *f, const uint8_t *font_buf)
 {
@@ -239,6 +245,7 @@ void Font_SetType(font_t *f, const uint8_t *font_buf)
         font_read_info(&f->font_info, font_buf);
     }
 }
+
 
 /**
  * 绘制 ASCII 字符串
@@ -249,7 +256,7 @@ void Font_SetType(font_t *f, const uint8_t *font_buf)
  * @param str  ASCII 字符串 (以 '\0' 结尾)
  * @return 绘制的总宽度 (像素)
  */
-uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str)
+uint16_t Font_DrawStrASCII(font_t *f, uint8_t x, uint8_t y, const char *str)
 {
     uint16_t sum;
     uint8_t  encoding;
@@ -279,6 +286,105 @@ uint16_t Font_DrawStr(font_t *f, uint8_t x, uint8_t y, const char *str)
     }
     return sum;
 }
+
+
+
+/**
+ * 获取下一个 UTF8 字符编码
+ *
+ * @param s 字符串指针
+ * @return Unicode编码，错误返回0xFFFE
+ */
+static uint16_t font_utf8_next(const char **s)
+{
+    uint8_t c;
+    uint8_t c2;
+    uint8_t c3;
+
+    c=(uint8_t)**s;
+    (*s)++;
+
+    if(c<0x80)
+    {
+        return c;
+    }
+
+    // 两字节UTF8
+    if((c&0xe0)==0xc0)
+    {
+        c2=(uint8_t)**s&0x3f;
+        (*s)++;
+
+        return (uint16_t)(((uint16_t)(c&0x1f)<<6)|c2);
+    }
+
+    // 三字节UTF8
+    if((c&0xf0)==0xe0)
+    {
+        c2=(uint8_t)**s&0x3f;
+        (*s)++;
+
+        c3=(uint8_t)**s&0x3f;
+        (*s)++;
+
+        return (uint16_t)(((uint16_t)(c&0x0f)<<12)|((uint16_t)c2<<6)|c3);
+    }
+
+    return 0xfffe;
+}
+
+
+
+/**
+ * 绘制 UTF8 字符串
+ *
+ * @param f        字体对象
+ * @param x        起始 x 坐标
+ * @param y        起始 y 坐标 (基线)
+ * @param str      UTF8 字符串 (以 '\0' 结尾)
+ * @return 绘制的总宽度 (像素)
+ */
+uint16_t Font_DrawStrUTF8(font_t *f,uint8_t x,uint8_t y,const char *str)
+{
+    uint16_t sum;
+    uint16_t encoding;
+    const char *s;
+    const uint8_t *glyph;
+    int8_t delta;
+
+    sum=0;
+    s=str;
+
+    // 按 ascent 调整基线
+    y=(uint8_t)(y+f->font_info.ascent_A);
+
+    while(*s!='\0')
+    {
+        encoding=font_utf8_next(&s);
+
+        if(encoding==0xFFFF)
+            break;
+
+        if(encoding==0xFFFE)
+            continue;
+
+        f->font_decode.target_x=x;
+        f->font_decode.target_y=y;
+
+        glyph=font_get_glyph_data(f,encoding);
+
+        if(glyph!=(const uint8_t *)0)
+        {
+            delta=font_decode_glyph(f,glyph);
+
+            x=(uint8_t)(x+delta);
+            sum=(uint16_t)(sum+(uint16_t)(uint8_t)delta);
+        }
+    }
+
+    return sum;
+}
+
 
 /**
  * 获取字符串的像素宽度
@@ -313,6 +419,7 @@ uint8_t Font_GetStrWidth(font_t *f, const char *str)
     }
     return width;
 }
+
 
 /**
  * 获取字体高度 (像素)
