@@ -14,9 +14,9 @@
 
 void OLED_I2C_Init(void)
 {
-    // P02 = SCL, P16 = SDA (IIC 复用)
-    P02F = 0x65;
-    P16F = 0x65;
+    // P13 = SCL, P14 = SDA
+    P13F = 0x65;
+    P14F = 0x65;
 
     // I2C 时钟分频选择：
     // 00 = 16MHz
