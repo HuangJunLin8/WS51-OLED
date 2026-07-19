@@ -105,81 +105,62 @@ static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 // -------------------- 主函数 --------------------
 void main()
 {
+    uint8_t centerX;
+    uint8_t centerY;
+    uint8_t w;
+    uint8_t h;
+    uint8_t i;
     
-    // 系统时钟: HRC 16MHz
-    SCCON  = 0x00;
+    
+    SCCON  = 0x00;          // 系统时钟: HRC 16MHz
     HRCON |= 0x80;
 
     init_timer0();
     delay_ms(200);          // 上电稳定
     
     OLED_I2C_Init();
-    delay_ms(100);          // 无此延时，IIC 时序会乱
+    delay_ms(100);          // 待 I2C 初始化
 
     OLED_Init();
 
-    while (1)
+	
+	  centerX = 47;           // 屏幕中心X (95/2)
+    centerY = 7;            // 屏幕中心Y (15/2)
+				
+    while(1)
     {
-        // 测试单像素
-        OLED_Clear();
-        OLED_SetPixel(48,8,1);
-        OLED_Flush();
-        delay_ms(500);
+        // 矩形扩大
+        for(i = 2; i <= 47; i++)
+        {
+            w = i * 2;
+            h = i / 3;
 
+            if(h < 2) h = 2;
 
-        // 测试水平线
-        OLED_Clear();
-        OLED_DrawHLine(24,5,50,1);
-        OLED_Flush();
-        delay_ms(500);
+            if(h > 16) h = 16;
 
+            OLED_Clear();
 
-        // 测试垂直线
-        OLED_Clear();
-        OLED_DrawVLine(48,2,12,1);
-        OLED_Flush();
-        delay_ms(500);
+            OLED_DrawFrame(centerX - i, centerY - h / 2, w, h, 1);
 
+            OLED_Flush();
+        }
 
-        // 测试斜线
-        OLED_Clear();
-        OLED_DrawLine(0,0,95,15,1);
-        OLED_Flush();
-        delay_ms(500);
+        // 矩形缩小
+        for(i = 47; i >= 2; i--)
+        {
+            w = i * 2;
+            h = i / 3;
 
+            if(h < 2) h = 2;
 
-        // 测试填充矩形
-        OLED_Clear();
-        OLED_FillRect(20,3,30,10,1);
-        OLED_Flush();
-        delay_ms(500);
+            if(h > 16) h = 16;
 
+            OLED_Clear();
 
-        // 测试矩形框
-        OLED_Clear();
-        OLED_DrawFrame(10,2,50,12,1);
-        OLED_Flush();
-        delay_ms(500);
+            OLED_DrawFrame(centerX - i, centerY - h / 2, w, h, 1);
 
-
-        // 测试圆角矩形
-        OLED_Clear();
-        OLED_DrawRoundedBox(20,2,50,12,3,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试圆角矩形框
-        OLED_Clear();
-        OLED_DrawRoundedFrame(20,2,50,12,3,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试ASCII字符串
-        OLED_Clear();
-        OLED_DrawASCII(5,1,"WS51F6240");
-        OLED_Flush();
-        delay_ms(500);
+            OLED_Flush();
+        }
     }
 }
