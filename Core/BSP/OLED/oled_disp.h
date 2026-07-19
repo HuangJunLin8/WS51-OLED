@@ -12,6 +12,7 @@
 
 #include "stdint.h"
 #include "font.h"
+#include "main.h"
 
 // 显示尺寸
 #define OLED_WIDTH   96

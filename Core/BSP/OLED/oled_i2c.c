@@ -14,94 +14,233 @@
 
 void OLED_I2C_Init(void)
 {
-    // P02 = SCL, P16 = SDA (IIC 复用功能, 与 SDK 一致)
+    // P02 = SCL, P16 = SDA (IIC 复用)
     P02F = 0xA5;
     P16F = 0xA5;
 
-    // I2C 时钟配置: SCL = Fi2c / (I2CFG1[6:0] + 8)
-    // Fi2c = 16MHz, I2CFG1 = 0xFF (127)
-    // SCL = 16,000,000 / (127 + 8) ≈ 119kHz
-    I2CCON  = 0x00;             // Fi2c_CLK = 16MHz (不分频)
-    I2CFG1  = 0xFF;             // 时钟分频器
+    // I2C 时钟分频选择：
+	  // 00 = 16MHz
+	  // 01 = 16Mhz / 2 = 8Mhz
+	  // 02 = 16Mhz / 3 = 5.33Mhz
+	  // 03 = 16Mhz / 4 = 4Mhz
+	
+	  // 实测：
+	  // 16Mhz SCL 低电平间隔 1~2us (逻辑分析仪 20Mhz 分析有时不准)
+	  // 4Mhz  SCL 低电平间隔 10us  (逻辑分析仪 20Mhz 分析准确)
+	
+    I2CCON = 0x03;
 
-    I2CFLG  = 0x00;             // 清除所有标志
+    // SCL 频率 = Fi2c / (I2CFG1[6:0] + 8)
+    // 0xFF → 16MHz / (127+8) ≈ 119KHz
+    I2CFG1 = 0xFF;
 
-    I2CCON |= (0x1 << 7);       // bit7 I2CE: 使能 I2C 模块
-    I2CCON &= ~(0x1 << 6);      // bit6 I2CIE: 禁能 I2C 中断
-    I2CCON &= ~(0x1 << 5);      // bit5 STAIE: 禁能 START 中断
-    I2CCON &= ~(0x1 << 4);      // bit4 STPIE: 禁能 STOP 中断
+    // 清除所有标志
+    I2CFLG = 0x00;
+
+    // 使能 I2C 模块 (bit7 = I2CE)
+    I2CCON |= 0x80;
+
+    // 禁止所有 I2C 中断 — 使用轮询方式
+    I2CCON &= ~0x40;   // 禁能 I2C 中断 (I2CIE = 0)
+    I2CCON &= ~0x20;   // 禁能 START 中断
+    I2CCON &= ~0x10;   // 禁能 STOP 中断
 }
 
-// -------------------- 硬件 I2C 发送 (基于 SDK I2C_WriteByteNum) --------------------
+// ------------------------------- 硬件 I2C 发送 -------------------------------
 
-/**
- * 发送 I2C 数据帧: [device_addr] + [ctrl_byte] + [data...]
+ /*
+ * I2C 发送一次 START + 设备地址 + 控制字 +数据块 + STOP
  *
- * 专为 SSD1306 设计:
- *   ctrl_byte = 0x00 → 命令
- *   ctrl_byte = 0x40 → 显示数据
+ * 时序：
+ *   START → DevAddr(W) → ACK → Ctrl → ACK → Data[0] → ACK → ... → Data[N-1] → ACK → STOP
  *
- * @param device_addr  I2C 从机地址 (7-bit 左移1位)
- * @param ctrl_byte    SSD1306 控制字节
- * @param buf          数据缓冲区
- * @param len          数据长度 (字节数)
- * @return 0=成功, 1=仲裁丢失, 2=收到 NACK
+ * 返回 0: 成功， 2: NACK，3: 超时
  */
-uint8_t OLED_I2C_Send(uint8_t device_addr, uint8_t ctrl_byte,
-                      const uint8_t *buf, uint8_t len)
+unsigned char OLED_I2C_Send(unsigned char device_addr,
+                            unsigned char ctrl_byte,
+                            unsigned char *buf,
+                            unsigned char len)
 {
-    uint8_t cnt = 0;
-    uint8_t total_len = len + 1;    // ctrl_byte + data 总字节数
+    unsigned char cnt = 0;
+    unsigned int timeout = 50000;
 
-    I2CFLG = 0;                     // 清除标志
-    I2CTXD = device_addr;           // 装载从机地址
-    I2CCON |= (0x1 << 3);           // 发送 START 信号
 
-    while (1)
+    I2CFLG = 0;
+
+
+    // 地址
+    I2CTXD = device_addr;
+
+
+    // START
+    I2CCON |= (1 << 3);
+
+
+    while(1)
     {
-        // START 信号已发出
-        if (IF_RXSTA == (I2CFLG & IF_RXSTA))
+        if(I2CFLG & IF_TXDAT)
         {
-            I2CFLG &= ~IF_RXSTA;
-        }
 
-        // 一字节发送完成并收到 ACK
-        if (IF_TXDAT == (I2CFLG & IF_TXDAT))
-        {
-            // 加载下一字节: 先发 ctrl_byte, 再发数据
-            if (cnt == 0)
-                I2CTXD = ctrl_byte;
-            else
-                I2CTXD = buf[cnt - 1];
+            // 检查 ACK
+            // if(I2CFLG & RXNAK)
+            // {
+            //    I2CCON |= (1<<2);
+            //    I2CFLG = 0;
+            //    return 2;
+            // }
 
-            cnt++;
 
-            // 全部字节已加载, 发送 STOP
-            if (cnt >= total_len)
+            // 发送控制字节
+            if(cnt == 0)
             {
-                I2CCON |= (0x1 << 2);   // STOP
+							
+                // 先清 TXDAT 标志
                 I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
+                I2CTXD = ctrl_byte;
+                cnt++;
+            }
+						
+						// 发送数据
+            else if(cnt <= len)
+            {
+							
+                // 先清 TXDAT 标志
+                I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
+                I2CTXD = buf[cnt - 1];
+							  cnt++;
+            }
+
+
+						// 所有数据装载完成
+            if(cnt > len)
+            {
+                // 先发 STOP
+                I2CCON |= (1<<2);
+
+                // 再清全部标志
                 I2CFLG = 0;
+
+                timeout = 50000;
+                while(!(I2CFLG & BUSIDLE))
+                {
+                    if(--timeout == 0)
+                        break;
+                }
+
                 return 0;
             }
 
-            I2CFLG &= ~IF_TXDAT;
+        }
 
-            // 检查 NACK
-            if (RXNAK == (I2CFLG & RXNAK))
+
+        if(I2CFLG & IF_LSTARB)
+        {
+            I2CFLG &= ~IF_LSTARB;
+            return 1;
+        }
+
+
+        if(--timeout == 0)
+        {
+            I2CCON |= (1<<2);
+            I2CFLG = 0;
+            return 3;
+        }
+    }
+}
+
+
+
+
+/*
+ * I2C 发送一次 START + 设备地址 + 数据块 + STOP
+ *
+ * 时序：
+ *   START → DevAddr(W) → ACK → Data[0] → ACK → ... → Data[N-1] → ACK → STOP
+ *
+ * 返回 0: 成功， 2: NACK，3: 超时
+ */
+unsigned char I2C_SendBurst(unsigned char dev_addr,
+                            unsigned char *buf,
+                            unsigned char len)
+{
+    unsigned char cnt = 0;
+    unsigned int timeout = 50000;
+
+    // 清全部标志
+    I2CFLG = 0;
+
+    // 压入地址
+    I2CTXD = dev_addr;
+
+    // 启动发送
+    I2CCON |= (1 << 3);
+
+    // 循环发送数据
+    while(1)
+    {
+        if(I2CFLG & IF_TXDAT)
+        {
+
+            // 检查 ACK
+            // if(I2CFLG & RXNAK)
+            // {
+            //    I2CCON |= (1<<2);
+            //    I2CFLG = 0;
+            //    return 2;
+            // }
+						
+
+            // 还有数据
+            if(cnt < len)
             {
-                I2CCON |= (0x1 << 2);   // STOP
-                I2CFLG = 0;
-                return 2;
+							
+                // 先清 TXDAT 标志
+                I2CFLG &= ~IF_TXDAT;
+
+                // 再压入新数据
+                I2CTXD = buf[cnt++];
+            }
+
+
+            // 所有数据已经装载
+            if(cnt >= len)
+            {
+                // 注意顺序：
+                // STOP 必须在清 TXDAT 前
+                I2CCON |= (1<<2);
+
+                // 再清全部标志
+                I2CFLG=0;
+
+                timeout=50000;
+                while(!(I2CFLG & BUSIDLE))
+                {
+                    if(--timeout==0)
+                        break;
+                }
+
+                return 0;
             }
         }
 
-        // 仲裁丢失
-        if (IF_LSTARB == (I2CFLG & IF_LSTARB))
+
+        if(I2CFLG & IF_LSTARB)
         {
             I2CFLG &= ~IF_LSTARB;
-            I2CFLG = 0;
             return 1;
+        }
+
+
+        if(--timeout==0)
+        {
+            I2CCON |= (1<<2);
+            I2CFLG=0;
+            return 3;
         }
     }
 }
