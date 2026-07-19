@@ -1,15 +1,17 @@
 /**
- * main.c — SSD1306 96x16 OLED 软件 IIC 测试 (WS51F6240)
+ * main.c — SSD1306 96x16 OLED 硬件 IIC 测试 (WS51F6240)
  *
- * 硬件连接:
- *   P13 = SCL (软件 I2C)
- *   P14 = SDA (软件 I2C, 外部 4.7kΩ 上拉)
+ * 参考 SDK "19-IIC-host-硬件":
+ *   P02 = SCL (硬件 I2C)
+ *   P16 = SDA (硬件 I2C, 外部 4.7kΩ 上拉)
  *
  * 测试: 全屏矩形框闪烁
  */
 
 #include "WS51F6240.h"
 #include "oled_disp.h"
+#include "oled_i2c.h"
+#include "main.h"
 
 // -------------------- 全局变量 --------------------
 
@@ -40,100 +42,99 @@ void delay_ms(unsigned int ms)
     while (g_tick_ms < target);
 }
 
-// -------------------- 绘制矩形框 --------------------
 
-static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
+// us 延时(1~49000us)
+void delay_us(unsigned int us)
 {
-    uint8_t i;
+    unsigned char  th, tl;
+    unsigned int   start, now, elapsed;
+    unsigned int   ticks;
 
-    // 上边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y1, 1);
-    // 下边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y2, 1);
-    // 左边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x1, i, 1);
-    // 右边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x2, i, 1);
+    if (us == 0) return;
+
+    // 目标 tick 数: us * 4 / 3 (每 tick = 0.75us)
+    ticks = us + us / 3;
+
+    // 关闭 Timer0 中断，防止 ISR 在测量期间重置计数值
+    ET0 = 0;
+
+    do {
+        th = TH0;
+        tl = TL0;
+    } while (th != TH0);
+    start = (th << 8) | tl;
+
+    // 轮询计数值直到达到目标 tick 数
+    do {
+        do {
+            th = TH0;
+            tl = TL0;
+        } while (th != TH0);
+        now = (th << 8) | tl;
+
+        // 处理 16-bit 计数器溢出
+        if (now >= start)
+            elapsed = now - start;
+        else
+            elapsed = (65536 - start) + now;
+    } while (elapsed < ticks);
+
+    // 恢复 Timer0 中断
+    ET0 = 1;
 }
 
-// -------------------- 主函数 --------------------
 
+void OLED_TestFillLine(void)
+{
+    uint8_t x;
+    uint8_t y;
+
+    OLED_Flush();
+
+    while(1)
+    {
+        // 逐行填充白色
+        for(y = 0; y < 16; y++)
+        {
+            for(x = 0; x < 96; x++)
+            {
+                OLED_SetPixel(x, y, 1);
+            }
+            OLED_Flush();
+        }
+
+
+        // 逐行填充黑色
+        for(y = 0; y < 16; y++)
+        {
+            for(x = 0; x < 96; x++)
+            {
+                OLED_SetPixel(x, y, 0);
+            }
+            OLED_Flush();
+        }
+    }
+}
+
+
+// -------------------- 主函数 --------------------
 void main()
 {
-    // 系统时钟: HRC 16MHz
-    SCCON  = 0x00;
+    SCCON  = 0x00;          // 系统时钟: HRC 16MHz
     HRCON |= 0x80;
 
     init_timer0();
-    delay_ms(1000);          // 上电稳定
-
+    delay_ms(200);          // 上电稳定
+    
     OLED_I2C_Init();
     delay_ms(100);          // 待 I2C 初始化
-  
+
     OLED_Init();
-    
-    while (1)
+
+    OLED_TestFillLine();
+
+    while(1)
     {
-        // 测试单像素
-        OLED_Clear();
-        OLED_SetPixel(48,8,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试水平线
-        OLED_Clear();
-        OLED_DrawHLine(24,5,50,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试垂直线
-        OLED_Clear();
-        OLED_DrawVLine(48,2,12,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试斜线
-        OLED_Clear();
-        OLED_DrawLine(0,0,95,15,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试填充矩形
-        OLED_Clear();
-        OLED_FillRect(20,3,30,10,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试矩形框
-        OLED_Clear();
-        OLED_DrawFrame(10,2,50,12,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试圆角矩形
-        OLED_Clear();
-        OLED_DrawRoundedBox(20,2,50,12,3,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试圆角矩形框
-        OLED_Clear();
-        OLED_DrawRoundedFrame(20,2,50,12,3,1);
-        OLED_Flush();
-        delay_ms(500);
-
-
-        // 测试ASCII字符串
-        OLED_Clear();
-        OLED_DrawASCII(5,1,"WS51F6240");
-        OLED_Flush();
-        delay_ms(500);
+         
     }
 }
