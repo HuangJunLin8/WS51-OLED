@@ -15,8 +15,8 @@
 void OLED_I2C_Init(void)
 {
     // P02 = SCL, P16 = SDA (IIC 复用)
-    P02F = 0xA5;
-    P16F = 0xA5;
+    P02F = 0x65;
+    P16F = 0x65;
 
     // I2C 时钟分频选择：
     // 00 = 16MHz
@@ -28,7 +28,7 @@ void OLED_I2C_Init(void)
     // 16Mhz SCL 低电平间隔 1~2us (逻辑分析仪 20Mhz 分析有时不准)
     // 4Mhz  SCL 低电平间隔 10us  (逻辑分析仪 20Mhz 分析准确)
     
-    I2CCON = 0x03;
+    I2CCON = 0x02;
 
     // SCL 频率 = Fi2c / (I2CFG1[6:0] + 8)
     // 0xFF → 16MHz / (127+8) ≈ 119KHz
