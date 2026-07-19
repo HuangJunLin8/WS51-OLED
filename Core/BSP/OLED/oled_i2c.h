@@ -36,7 +36,7 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
                             unsigned char ctrl_byte,
                             unsigned char *buf,
                             unsigned char len);
-											
+                                            
 unsigned char I2C_SendBurst(unsigned char dev_addr, unsigned char *buf, unsigned char len);
 
 #endif // OLED_I2C_H

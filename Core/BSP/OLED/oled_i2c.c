@@ -10,7 +10,7 @@
 
 #include "oled_i2c.h"
 
-// -------------------- 硬件 I2C 初始化 (与 SDK I2C_Init 一致) --------------------
+// -------------------- 硬件 I2C 初始化 --------------------
 
 void OLED_I2C_Init(void)
 {
@@ -19,15 +19,15 @@ void OLED_I2C_Init(void)
     P16F = 0xA5;
 
     // I2C 时钟分频选择：
-	  // 00 = 16MHz
-	  // 01 = 16Mhz / 2 = 8Mhz
-	  // 02 = 16Mhz / 3 = 5.33Mhz
-	  // 03 = 16Mhz / 4 = 4Mhz
-	
-	  // 实测：
-	  // 16Mhz SCL 低电平间隔 1~2us (逻辑分析仪 20Mhz 分析有时不准)
-	  // 4Mhz  SCL 低电平间隔 10us  (逻辑分析仪 20Mhz 分析准确)
-	
+    // 00 = 16MHz
+    // 01 = 16Mhz / 2 = 8Mhz
+    // 02 = 16Mhz / 3 = 5.33Mhz
+    // 03 = 16Mhz / 4 = 4Mhz
+
+    // 实测：
+    // 16Mhz SCL 低电平间隔 1~2us (逻辑分析仪 20Mhz 分析有时不准)
+    // 4Mhz  SCL 低电平间隔 10us  (逻辑分析仪 20Mhz 分析准确)
+    
     I2CCON = 0x03;
 
     // SCL 频率 = Fi2c / (I2CFG1[6:0] + 8)
@@ -93,7 +93,7 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
             // 发送控制字节
             if(cnt == 0)
             {
-							
+                            
                 // 先清 TXDAT 标志
                 I2CFLG &= ~IF_TXDAT;
 
@@ -101,21 +101,21 @@ unsigned char OLED_I2C_Send(unsigned char device_addr,
                 I2CTXD = ctrl_byte;
                 cnt++;
             }
-						
-						// 发送数据
+                        
+            // 发送数据
             else if(cnt <= len)
             {
-							
+                            
                 // 先清 TXDAT 标志
                 I2CFLG &= ~IF_TXDAT;
 
                 // 再压入新数据
                 I2CTXD = buf[cnt - 1];
-							  cnt++;
+                              cnt++;
             }
 
 
-						// 所有数据装载完成
+            // 所有数据装载完成
             if(cnt > len)
             {
                 // 先发 STOP
@@ -193,12 +193,12 @@ unsigned char I2C_SendBurst(unsigned char dev_addr,
             //    I2CFLG = 0;
             //    return 2;
             // }
-						
+                        
 
             // 还有数据
             if(cnt < len)
             {
-							
+                            
                 // 先清 TXDAT 标志
                 I2CFLG &= ~IF_TXDAT;
 
