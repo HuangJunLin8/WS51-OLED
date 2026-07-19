@@ -84,34 +84,42 @@ void delay_us(unsigned int us)
 }
 
 
-// -------------------- 绘制矩形框 --------------------
-
-static void draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
+void OLED_TestFillLine(void)
 {
-    uint8_t i;
+    uint8_t x;
+    uint8_t y;
 
-    // 上边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y1, 1);
-    // 下边
-    for (i = x1; i <= x2; i++) OLED_SetPixel(i, y2, 1);
-    // 左边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x1, i, 1);
-    // 右边
-    for (i = y1; i <= y2; i++) OLED_SetPixel(x2, i, 1);
+    OLED_Flush();
+
+    while(1)
+    {
+        // 逐行填充白色
+        for(y = 0; y < 16; y++)
+        {
+            for(x = 0; x < 96; x++)
+            {
+                OLED_SetPixel(x, y, 1);
+            }
+            OLED_Flush();
+        }
+
+
+        // 逐行填充黑色
+        for(y = 0; y < 16; y++)
+        {
+            for(x = 0; x < 96; x++)
+            {
+                OLED_SetPixel(x, y, 0);
+            }
+            OLED_Flush();
+        }
+    }
 }
-
 
 
 // -------------------- 主函数 --------------------
 void main()
 {
-    uint8_t centerX;
-    uint8_t centerY;
-    uint8_t w;
-    uint8_t h;
-    uint8_t i;
-    
-    
     SCCON  = 0x00;          // 系统时钟: HRC 16MHz
     HRCON |= 0x80;
 
@@ -123,44 +131,10 @@ void main()
 
     OLED_Init();
 
-	
-	  centerX = 47;           // 屏幕中心X (95/2)
-    centerY = 7;            // 屏幕中心Y (15/2)
-				
+    OLED_TestFillLine();
+
     while(1)
     {
-        // 矩形扩大
-        for(i = 2; i <= 47; i++)
-        {
-            w = i * 2;
-            h = i / 3;
-
-            if(h < 2) h = 2;
-
-            if(h > 16) h = 16;
-
-            OLED_Clear();
-
-            OLED_DrawFrame(centerX - i, centerY - h / 2, w, h, 1);
-
-            OLED_Flush();
-        }
-
-        // 矩形缩小
-        for(i = 47; i >= 2; i--)
-        {
-            w = i * 2;
-            h = i / 3;
-
-            if(h < 2) h = 2;
-
-            if(h > 16) h = 16;
-
-            OLED_Clear();
-
-            OLED_DrawFrame(centerX - i, centerY - h / 2, w, h, 1);
-
-            OLED_Flush();
-        }
+         
     }
 }
